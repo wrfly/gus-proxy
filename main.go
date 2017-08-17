@@ -1,106 +1,91 @@
 package main
 
 import (
-	"fmt"
-	"io"
+	"net"
 	"net/http"
-	"net/url"
+	"os"
 
-	"github.com/elazarl/goproxy"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/proxy"
+	"github.com/wrfly/gus-proxy/config"
+	"github.com/wrfly/gus-proxy/prox"
+	"github.com/wrfly/gus-proxy/round"
+	"gopkg.in/urfave/cli.v1"
 )
 
-// func main() {
-
-// 	proxy, err := proxySocks5("127.0.0.1:1080")
-// 	if err != nil {
-// 		log.Errorf("make proxy error: [%s]", err)
-// 	}
-// 	proxy.
-// 		log.Fatal(http.ListenAndServe(":8080", nil))
-// }
-
-func proxyHTTP(httpAddr string) (*goproxy.ProxyHttpServer, error) {
-	// goproxy.NewProxyHttpServer()
-	return nil, nil
-}
-
-func proxySocks5(socks5Addr string) (*goproxy.ProxyHttpServer, error) {
-	dialer, err := proxy.SOCKS5("tcp", socks5Addr, nil, proxy.Direct)
-	if err != nil {
-		return nil, err
-	}
-
-	proxy := goproxy.NewProxyHttpServer()
-	proxy.Verbose = true
-	proxy.Tr.Dial = dialer.Dial
-	return proxy, nil
-}
-
 func main() {
-	hf := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		c := &http.Client{}
+	var (
+		debug    bool
+		hostfile string
+		schduler string
+		listenpt string
+	)
+	app := cli.NewApp()
+	app.Name = "gus-proxy"
+	app.Usage = "An apple a day, keep the doctor away."
+	app.Version = "0.0.1"
 
-		// reset header
-		req.Header.Set("User-Agent", "google bot")
-		req.RequestURI = ""
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:        "file, f",
+			Value:       "proxyhosts.txt",
+			Usage:       "host list contains the proxys",
+			Destination: &hostfile,
+		},
+		cli.BoolFlag{
+			Name:        "debug, d",
+			Usage:       "debug mode",
+			Destination: &debug,
+		},
+		cli.StringFlag{
+			Name:        "schduler, s",
+			Value:       "round-robin",
+			Usage:       "schduler: round-robin|ping|random",
+			Destination: &schduler,
+		},
+		cli.StringFlag{
+			Name:        "listen, l",
+			Value:       "8080",
+			Usage:       "port to bind",
+			Destination: &listenpt,
+		},
+	}
 
-		p := "http://"
-		if req.TLS != nil {
-			p = "https://"
+	app.Action = func(c *cli.Context) error {
+		if debug {
+			log.SetLevel(log.DebugLevel)
 		}
-		h := req.Host
-		i := req.URL.Path
-
-		u, err := url.Parse(fmt.Sprintf("%s%s%s", p, h, i))
-		if err != nil {
-			log.Error(err)
-			return
+		conf := config.Config{
+			ProxyHostsFile: hostfile,
+			Scheduler:      schduler,
+			ListenPort:     listenpt,
 		}
-		req.URL = u
+		runGus(conf)
+		return nil
+	}
 
-		resp, err := c.Do(req)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		copyHeaders(w.Header(), resp.Header)
-		w.WriteHeader(resp.StatusCode)
-		_, err = io.Copy(w, resp.Body)
-		if err != nil {
-			w.WriteHeader(500)
-			w.Write([]byte(err.Error()))
-			return
-		}
-		resp.Body.Close()
-	})
-
-	http.HandleFunc("/", hf)
-	http.ListenAndServe(":8080", nil)
+	app.Run(os.Args)
 }
 
-func copyHeaders(dst, src http.Header) {
-	for k := range dst {
-		dst.Del(k)
-	}
-	for k, vs := range src {
-		for _, v := range vs {
-			dst.Add(k, v)
-		}
-	}
-}
+func runGus(conf config.Config) {
 
-func resetRequest(ori *http.Request) *http.Request {
-	r := &http.Request{
-		Method:     ori.Method,
-		URL:        ori.URL,
-		Proto:      ori.Proto,
-		ProtoMajor: ori.ProtoMajor,
-		ProtoMinor: ori.ProtoMinor,
-		Header:     ori.Header,
+	if !conf.Validate() {
+		log.Fatal("Config Validate Error")
 	}
-	r.Header.Set("User-Agent", "google bot")
 
-	return r
+	hosts, err := conf.LoadHosts()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	proxys, err := prox.New(hosts)
+	if err != nil {
+		panic(err)
+	}
+
+	l, err := net.Listen("tcp4", conf.ListenPort)
+	if err != nil {
+		panic(err)
+	}
+
+	http.Serve(l, round.New(proxys))
 }
