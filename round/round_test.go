@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -49,8 +50,6 @@ func TestCurlIPWithProxy(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, proxys)
 
-	logrus.Info(proxys)
-
 	l, err := net.Listen("tcp4", localProxy)
 	assert.NoError(t, err)
 	go http.Serve(l, New(proxys))
@@ -60,11 +59,22 @@ func TestCurlIPWithProxy(t *testing.T) {
 		Transport: &http.Transport{
 			Proxy: http.ProxyURL(proxyURL),
 		},
+		Timeout: 3 * time.Second,
 	}
-	for i := 0; i < 9; i++ {
-		resp, err := clnt.Get("http://ip.chinaz.com/getip.aspx")
-		assert.NoError(t, err)
-		body, _ := ioutil.ReadAll(resp.Body)
-		fmt.Printf("%s\n", body)
+	var wg sync.WaitGroup
+	for i := 0; i < 6; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			resp, err := clnt.Get("http://ip.chinaz.com/getip.aspx")
+			assert.NoError(t, err)
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				logrus.Error(err)
+			}
+			fmt.Printf("%s\n", body)
+			resp.Body.Close()
+		}()
 	}
+	wg.Wait()
 }

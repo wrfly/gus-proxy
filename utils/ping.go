@@ -1,0 +1,46 @@
+package utils
+
+import (
+	"fmt"
+	"net/url"
+	"os/exec"
+	"strconv"
+	"strings"
+
+	// ping "github.com/sparrc/go-ping"
+	"github.com/wrfly/gus-proxy/types"
+)
+
+// GetProxyPing ...
+func GetProxyPing(host types.ProxyHost) float32 {
+	URL, _ := url.Parse(host.Addr)
+	ip := strings.Split(URL.Host, ":")[0]
+
+	// fmt.Println(ip)
+	// pinger, err := ping.NewPinger(ip)
+	// if err != nil {
+	// 	return 1 * time.Hour
+	// }
+	// pinger.Count = 3
+	// pinger.Run()                 // blocks until finished
+	// stats := pinger.Statistics() // get send/receive/rtt stats
+
+	// return stats.AvgRtt
+	cmd := exec.Command("ping", "-A", "-c", "3", "-w", "2", ip)
+	b, err := cmd.Output()
+	if err != nil {
+		fmt.Println(err)
+		return 9999
+	}
+
+	o := string(b)
+	l := strings.LastIndex(o, "=")
+	o = string(o[l+2:])
+	s := strings.Split(o, "/")
+
+	avg := s[1]
+
+	f, _ := strconv.ParseFloat(avg, 32)
+
+	return float32(f)
+}

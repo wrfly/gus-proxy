@@ -24,8 +24,9 @@ func proxyHTTP(httpAddr string) (*goproxy.ProxyHttpServer, error) {
 	return prox, nil
 }
 
-func proxySocks5(socks5Addr string) (*goproxy.ProxyHttpServer, error) {
-	dialer, err := proxy.SOCKS5("tcp", socks5Addr, nil, proxy.Direct)
+func proxySocks5(socks5Addr string, auth proxy.Auth) (*goproxy.ProxyHttpServer, error) {
+
+	dialer, err := proxy.SOCKS5("tcp", socks5Addr, &auth, proxy.Direct)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +49,7 @@ func New(oHosts []*types.ProxyHost) ([]*types.ProxyHost, error) {
 		case "http":
 			p, err = proxyHTTP(host.Addr)
 		case "socks5":
-			p, err = proxySocks5(hostAndPort)
+			p, err = proxySocks5(hostAndPort, auth)
 		case "https":
 		default:
 			return nil, fmt.Errorf("Unknown protocol %s", scheme)
@@ -63,7 +64,7 @@ func New(oHosts []*types.ProxyHost) ([]*types.ProxyHost, error) {
 	return oHosts, nil
 }
 
-func splitURL(URL string) (auth types.ProxyAuth, scheme, host string) {
+func splitURL(URL string) (auth proxy.Auth, scheme, host string) {
 	u, err := url.Parse(URL)
 	if err != nil {
 		return
@@ -71,7 +72,7 @@ func splitURL(URL string) (auth types.ProxyAuth, scheme, host string) {
 	scheme = u.Scheme
 	host = u.Host
 	if u.User != nil {
-		auth.Username = u.User.Username()
+		auth.User = u.User.Username()
 		auth.Password, _ = u.User.Password()
 	}
 

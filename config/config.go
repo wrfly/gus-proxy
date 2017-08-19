@@ -8,10 +8,12 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 	"github.com/wrfly/gus-proxy/round"
 	"github.com/wrfly/gus-proxy/types"
+	"github.com/wrfly/gus-proxy/utils"
 )
 
 // Config ...
@@ -19,6 +21,7 @@ type Config struct {
 	ProxyHostsFile string
 	Scheduler      string
 	ListenPort     string
+	ProxyHosts     []*types.ProxyHost
 }
 
 // Validate the config
@@ -74,5 +77,22 @@ func (c *Config) LoadHosts() ([]*types.ProxyHost, error) {
 		proxyHosts = append(proxyHosts, host)
 	}
 
+	c.ProxyHosts = proxyHosts
 	return proxyHosts, nil
+}
+
+// UpdateProxys update proxy's attr
+func (c *Config) UpdateProxys() {
+	var wg sync.WaitGroup
+	for _, proxy := range c.ProxyHosts {
+		wg.Add(1)
+		go func(proxy *types.ProxyHost) {
+			defer wg.Done()
+			if utils.CheckProxyAvailable(*proxy) == nil {
+				proxy.Alive = true
+			}
+			proxy.Ping = utils.GetProxyPing()
+		}(proxy)
+	}
+	wg.Wait()
 }
