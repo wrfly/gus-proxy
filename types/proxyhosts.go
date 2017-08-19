@@ -7,10 +7,10 @@ import (
 
 // ProxyHost defines the proxy
 type ProxyHost struct {
-	Type    string // http or socks5
-	Addr    string // 127.0.0.1:1080
-	Alive   bool
-	Ping    float32 // 66 ms
-	Auth    proxy.Auth
-	GoProxy *goproxy.ProxyHttpServer
+	Type      string  // http or socks5
+	Addr      string  // 127.0.0.1:1080
+	Ping      float32 // 66 ms
+	Available bool
+	Auth      proxy.Auth
+	GoProxy   *goproxy.ProxyHttpServer
 }

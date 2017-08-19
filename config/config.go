@@ -88,10 +88,13 @@ func (c *Config) UpdateProxys() {
 		wg.Add(1)
 		go func(proxy *types.ProxyHost) {
 			defer wg.Done()
-			if utils.CheckProxyAvailable(*proxy) == nil {
-				proxy.Alive = true
+			proxy.Available = false
+			if utils.CheckProxyAvailable(proxy) == nil {
+				proxy.Available = true
 			}
-			proxy.Ping = utils.GetProxyPing()
+			proxy.Ping = utils.GetProxyPing(proxy)
+			logrus.Debugf("Proxy: %s, Available: %v, RTT: %f",
+				proxy.Addr, proxy.Available, proxy.Ping)
 		}(proxy)
 	}
 	wg.Wait()

@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/wrfly/gus-proxy/config"
@@ -54,7 +55,7 @@ func main() {
 		if debug {
 			log.SetLevel(log.DebugLevel)
 		}
-		conf := config.Config{
+		conf := &config.Config{
 			ProxyHostsFile: hostfile,
 			Scheduler:      schduler,
 			ListenPort:     listenpt,
@@ -66,10 +67,11 @@ func main() {
 	app.Run(os.Args)
 }
 
-func runGus(conf config.Config) {
+func runGus(conf *config.Config) {
+	log.Info("Gus is starting...")
 
 	if !conf.Validate() {
-		log.Fatal("Config Validate Error")
+		log.Fatal("Verify config error, exit.")
 	}
 
 	hosts, err := conf.LoadHosts()
@@ -77,15 +79,26 @@ func runGus(conf config.Config) {
 		log.Fatal(err)
 	}
 
-	proxys, err := prox.New(hosts)
+	log.Info("Creating proxys...")
+	conf.ProxyHosts, err = prox.New(hosts)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Create proxys error: %s", err)
 	}
+
+	// update proxy status
+	log.Info("Updating proxys...")
+	conf.UpdateProxys()
+	go func() {
+		for {
+			conf.UpdateProxys()
+			time.Sleep(10 * time.Second)
+		}
+	}()
 
 	l, err := net.Listen("tcp4", conf.ListenPort)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Bind port error: %s", err)
 	}
-
-	http.Serve(l, round.New(proxys))
+	log.Info("Gus is running...")
+	log.Fatal(http.Serve(l, round.New(conf.ProxyHosts)))
 }

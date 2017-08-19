@@ -52,7 +52,7 @@ func New(oHosts []*types.ProxyHost) ([]*types.ProxyHost, error) {
 			p, err = proxySocks5(hostAndPort, auth)
 		case "https":
 		default:
-			return nil, fmt.Errorf("Unknown protocol %s", scheme)
+			return nil, fmt.Errorf("[%s]: unknown protocol %s", host.Addr, scheme)
 		}
 		if err != nil || p == nil {
 			continue

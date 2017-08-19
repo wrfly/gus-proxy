@@ -28,38 +28,45 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // SelectProxy returns a proxy depends on your scheduler
 func (p *Proxy) SelectProxy() *goproxy.ProxyHttpServer {
+	rProxy := &types.ProxyHost{}
+
 	switch p.Scheduler {
 	case ROUND_ROBIN:
-		return p.roundRobin()
+		rProxy = p.roundRobin()
 	case RANDOM:
-		return p.randomProxy()
+		rProxy = p.randomProxy()
 	default:
-		return p.roundRobin()
+		rProxy = p.roundRobin()
 	}
+	if !rProxy.Available {
+		return p.SelectProxy()
+	}
+	logrus.Debugf("Use proxy: %s", rProxy.Addr)
+	return rProxy.GoProxy
 }
 
-func (p *Proxy) roundRobin() *goproxy.ProxyHttpServer {
+func (p *Proxy) roundRobin() *types.ProxyHost {
 	use := p.Next
 	rProxy := p.ProxyHosts[use]
 	p.Next++
 	if p.Next == len(p.ProxyHosts) {
 		p.Next = 0
 	}
-	logrus.Debugf("Use proxy: %s", rProxy.Addr)
-	return rProxy.GoProxy
+
+	return rProxy
 }
 
-func (p *Proxy) randomProxy() *goproxy.ProxyHttpServer {
+func (p *Proxy) randomProxy() *types.ProxyHost {
 	use := rand.Int() % len(p.ProxyHosts)
 	rProxy := p.ProxyHosts[use]
-	logrus.Debugf("Use proxy: %s", rProxy.Addr)
-	return rProxy.GoProxy
+
+	return rProxy
 }
 
 // New round proxy servers
 func New(proxyHosts []*types.ProxyHost) *Proxy {
 	if len(proxyHosts) == 0 {
-		panic("No avaliable proxy hosts to use")
+		logrus.Fatal("No avaliable proxy hosts to use")
 	}
 	return &Proxy{
 		ProxyHosts: proxyHosts,

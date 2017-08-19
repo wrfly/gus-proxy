@@ -8,24 +8,16 @@ import (
 	"strings"
 
 	// ping "github.com/sparrc/go-ping"
+	"github.com/sirupsen/logrus"
 	"github.com/wrfly/gus-proxy/types"
 )
 
-// GetProxyPing ...
-func GetProxyPing(host types.ProxyHost) float32 {
+// GetProxyPing ping the proxy ip and returns the average rtt
+func GetProxyPing(host *types.ProxyHost) float32 {
 	URL, _ := url.Parse(host.Addr)
 	ip := strings.Split(URL.Host, ":")[0]
+	logrus.Debugf("GetProxyPing [%s]", ip)
 
-	// fmt.Println(ip)
-	// pinger, err := ping.NewPinger(ip)
-	// if err != nil {
-	// 	return 1 * time.Hour
-	// }
-	// pinger.Count = 3
-	// pinger.Run()                 // blocks until finished
-	// stats := pinger.Statistics() // get send/receive/rtt stats
-
-	// return stats.AvgRtt
 	cmd := exec.Command("ping", "-A", "-c", "3", "-w", "2", ip)
 	b, err := cmd.Output()
 	if err != nil {
