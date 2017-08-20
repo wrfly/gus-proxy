@@ -3,6 +3,7 @@ package round
 import (
 	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/wrfly/goproxy"
@@ -26,6 +27,7 @@ type Proxy struct {
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// rebuild request
 	r.URL.Host = utils.SelectIP(r.Host)
+	r.Header.Set("User-Agent", utils.RandomUA())
 
 	selectedProxy := p.SelectProxy()
 	if selectedProxy != nil {
@@ -92,7 +94,10 @@ func (p *Proxy) randomProxy() *types.ProxyHost {
 			avaliableProxy = append(avaliableProxy, p)
 		}
 	}
-	use := rand.Int() % len(avaliableProxy)
+
+	source := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(source)
+	use := r.Int() % len(avaliableProxy)
 	rProxy := avaliableProxy[use]
 
 	return rProxy
