@@ -87,13 +87,16 @@ func runGus(conf *config.Config) {
 
 	// update proxy status
 	log.Info("Updating proxys...")
-	conf.UpdateProxys()
+	upChan := make(chan interface{})
 	go func() {
 		for {
 			conf.UpdateProxys()
-			time.Sleep(10 * time.Second)
+			upChan <- true
+			time.Sleep(1000 * time.Second)
 		}
 	}()
+	<-upChan
+	close(upChan)
 
 	l, err := net.Listen("tcp4", conf.ListenPort)
 	if err != nil {

@@ -11,24 +11,28 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// SelectIP select one ip form dig answers
-func SelectIP(domain string) string {
-	ips, err := DigIP(domain)
+// SelectIP kfd.me -> x.x.x.x
+// hello.cn:8080 -> xx.x.xx.xx:8080
+func SelectIP(host string) string {
+	s := strings.Split(host, ":")
+	ips, err := dig(s[0])
 	if err != nil {
 		logrus.Errorf("Select IP Error: %s", err)
 		return "127.0.0.1"
 	}
 
 	i := rand.Int() % len(ips)
+	if strings.Contains(host, ":") {
+		return fmt.Sprintf("%s:%s", ips[i], s[1])
+	}
 	return ips[i]
 }
 
-// DigIP domain's IPs
-func DigIP(domain string) (IPs []string, err error) {
+func dig(domain string) (IPs []string, err error) {
 	config, _ := dns.ClientConfigFromFile("/etc/resolv.conf")
 	c := new(dns.Client)
-	c.DialTimeout = time.Duration(3 * time.Second)
-	c.ReadTimeout = time.Duration(3 * time.Second)
+	c.DialTimeout = time.Duration(2 * time.Second)
+	c.ReadTimeout = time.Duration(2 * time.Second)
 
 	m := new(dns.Msg)
 	m.SetQuestion(dns.Fqdn(domain), dns.TypeA)

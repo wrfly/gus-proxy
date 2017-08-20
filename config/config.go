@@ -84,18 +84,38 @@ func (c *Config) LoadHosts() ([]*types.ProxyHost, error) {
 // UpdateProxys update proxy's attr
 func (c *Config) UpdateProxys() {
 	var wg sync.WaitGroup
+	avaliableProxy := struct {
+		Num  int
+		Lock sync.Mutex
+	}{}
+
 	for _, proxy := range c.ProxyHosts {
 		wg.Add(1)
 		go func(proxy *types.ProxyHost) {
 			defer wg.Done()
 			proxy.Available = false
 			if utils.CheckProxyAvailable(proxy) == nil {
+				avaliableProxy.Lock.Lock()
+				avaliableProxy.Num++
+				avaliableProxy.Lock.Unlock()
 				proxy.Available = true
 			}
 			proxy.Ping = utils.GetProxyPing(proxy)
-			logrus.Debugf("Proxy: %s, Available: %v, RTT: %f",
+			logrus.Debugf("Proxy: %s, Available: %v, Ping: %f",
 				proxy.Addr, proxy.Available, proxy.Ping)
 		}(proxy)
 	}
 	wg.Wait()
+
+	avaliableNum := avaliableProxy.Num
+	totalNum := len(c.ProxyHosts)
+	switch { // mast in this order (small to big)
+	case avaliableNum*4 <= totalNum:
+		logrus.Errorf("Not enough avaliable proxys, avaliable: [%d] total: [%d], red line",
+			avaliableNum, totalNum)
+		// some alert
+	case avaliableNum*2 <= totalNum:
+		logrus.Warnf("Half of the proxys was down, avaliable: [%d] total: [%d], yellow line",
+			avaliableNum, totalNum)
+	}
 }

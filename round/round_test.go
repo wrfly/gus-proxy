@@ -21,9 +21,16 @@ import (
 func TestRoundProxy(t *testing.T) {
 	log.SetOutput(os.Stdout)
 
+	ava := true
 	hosts := []*types.ProxyHost{
-		&types.ProxyHost{Addr: "http://61.130.97.212:8099"},
-		&types.ProxyHost{Addr: "socks5://127.0.0.1:1080"},
+		&types.ProxyHost{
+			Addr:      "http://61.130.97.212:8099",
+			Available: ava,
+		},
+		&types.ProxyHost{
+			Addr:      "socks5://127.0.0.1:1080",
+			Available: ava,
+		},
 	}
 
 	proxys, err := prox.New(hosts)
@@ -40,10 +47,19 @@ func TestRoundProxy(t *testing.T) {
 }
 
 func TestCurlIPWithProxy(t *testing.T) {
+	log.SetOutput(os.Stdout)
+
+	ava := false
 	localProxy := "127.0.0.1:8080"
 	hosts := []*types.ProxyHost{
-		&types.ProxyHost{Addr: "http://61.130.97.212:8099"},
-		&types.ProxyHost{Addr: "socks5://127.0.0.1:1080"},
+		&types.ProxyHost{
+			Addr:      "http://61.130.97.212:8099",
+			Available: ava,
+		},
+		&types.ProxyHost{
+			Addr:      "socks5://127.0.0.1:1080",
+			Available: ava,
+		},
 	}
 
 	proxys, err := prox.New(hosts)
@@ -68,6 +84,9 @@ func TestCurlIPWithProxy(t *testing.T) {
 			defer wg.Done()
 			resp, err := clnt.Get("http://ip.chinaz.com/getip.aspx")
 			assert.NoError(t, err)
+			if resp == nil {
+				return
+			}
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				logrus.Error(err)
