@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"net/url"
 	"os/exec"
 	"strconv"
@@ -21,7 +20,6 @@ func GetProxyPing(host *types.ProxyHost) float32 {
 	cmd := exec.Command("ping", "-A", "-c", "3", "-w", "2", ip)
 	b, err := cmd.Output()
 	if err != nil {
-		fmt.Println(err)
 		return 9999
 	}
 

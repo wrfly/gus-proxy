@@ -47,6 +47,7 @@ func TestDig(t *testing.T) {
 	t.Log(SelectIP("kfd.me"))
 	t.Log(SelectIP("kfd.me:8080"))
 	t.Log(SelectIP("kfd.me"))
+	t.Log(SelectIP("www.zhihu.com"))
 }
 
 func TestRandomUA(t *testing.T) {

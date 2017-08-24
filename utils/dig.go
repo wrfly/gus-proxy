@@ -17,7 +17,7 @@ func SelectIP(host string) string {
 	s := strings.Split(host, ":")
 	ips, err := dig(s[0])
 	if err != nil {
-		logrus.Errorf("Select IP Error: %s", err)
+		logrus.Errorf("Dig Error: %s", err)
 		return "127.0.0.1"
 	}
 
