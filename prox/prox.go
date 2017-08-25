@@ -51,6 +51,7 @@ func New(oHosts []*types.ProxyHost) ([]*types.ProxyHost, error) {
 		case "socks5":
 			p, err = proxySocks5(hostAndPort, auth)
 		case "https":
+		// TODO
 		default:
 			return nil, fmt.Errorf("[%s]: unknown protocol %s", host.Addr, scheme)
 		}

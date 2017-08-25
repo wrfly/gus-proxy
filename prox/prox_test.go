@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/wrfly/gus-proxy/types"
+	"golang.org/x/net/proxy"
 )
 
 func TestHttpProxy(t *testing.T) {
@@ -22,7 +23,7 @@ func TestHttpProxy(t *testing.T) {
 
 func TestSocks5Proxy(t *testing.T) {
 	addr := "127.0.0.1:1080"
-	p, err := proxySocks5(addr)
+	p, err := proxySocks5(addr, proxy.Auth{})
 	assert.NoError(t, err)
 
 	go http.ListenAndServe("127.0.0.1:8080", p)

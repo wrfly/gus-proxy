@@ -111,11 +111,11 @@ func (c *Config) UpdateProxys() {
 	totalNum := len(c.ProxyHosts)
 	switch { // mast in this order (small to big)
 	case avaliableNum*4 <= totalNum:
-		logrus.Errorf("Not enough avaliable proxys, avaliable: [%d] total: [%d], red line",
+		logrus.Errorf("Not enough avaliable proxys, avaliable: [%d] total: [%d], I'm angry!",
 			avaliableNum, totalNum)
 		// some alert
 	case avaliableNum*2 <= totalNum:
-		logrus.Warnf("Half of the proxys was down, avaliable: [%d] total: [%d], yellow line",
+		logrus.Warnf("Half of the proxys was down, avaliable: [%d] total: [%d], I'm worried...",
 			avaliableNum, totalNum)
 	}
 }

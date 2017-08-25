@@ -3,6 +3,7 @@ package round
 import (
 	"math/rand"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -21,7 +22,7 @@ const (
 type Proxy struct {
 	ProxyHosts []*types.ProxyHost
 	Scheduler  string // round-robin/random/ping
-	Next       int
+	next       int
 }
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -77,12 +78,12 @@ ReSelect:
 }
 
 func (p *Proxy) roundRobin() *types.ProxyHost {
-	if p.Next == len(p.ProxyHosts) {
-		p.Next = 0
+	if p.next == len(p.ProxyHosts) {
+		p.next = 0
 	}
-	use := p.Next
+	use := p.next
 	rProxy := p.ProxyHosts[use]
-	p.Next++
+	p.next++
 
 	return rProxy
 }
@@ -98,6 +99,33 @@ func (p *Proxy) randomProxy() *types.ProxyHost {
 	source := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(source)
 	use := r.Int() % len(avaliableProxy)
+	rProxy := avaliableProxy[use]
+
+	return rProxy
+}
+
+func (p *Proxy) pingProxy() *types.ProxyHost {
+	avaliableProxy := []*types.ProxyHost{}
+	for _, p := range p.ProxyHosts {
+		if p.Available {
+			avaliableProxy = append(avaliableProxy, p)
+		}
+	}
+
+	sort.Slice(avaliableProxy, func(i, j int) bool {
+		return avaliableProxy[i].Ping < avaliableProxy[j].Ping
+	})
+
+	source := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(source)
+	// 随机取前1/3 || len
+	use := r.Int() % (func() int {
+		l := len(avaliableProxy)
+		if l <= 3 {
+			return l
+		}
+		return l / 3
+	}())
 	rProxy := avaliableProxy[use]
 
 	return rProxy

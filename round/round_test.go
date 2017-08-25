@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -96,4 +97,31 @@ func TestCurlIPWithProxy(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+}
+
+func generateProxys(num int) []*types.ProxyHost {
+	proxys := []*types.ProxyHost{}
+	for i := 0; i < num; i++ {
+		source := rand.NewSource(time.Now().UnixNano())
+		r := rand.New(source)
+		ping := r.Float32() * 10
+		rProxy := &types.ProxyHost{
+			Addr:      fmt.Sprintf("http://proxy-%d-ping-%f", i, ping),
+			Ping:      ping,
+			Available: true,
+		}
+		proxys = append(proxys, rProxy)
+	}
+	return proxys
+}
+
+func TestPingProxy(t *testing.T) {
+	p := &Proxy{
+		ProxyHosts: generateProxys(10),
+		Scheduler:  PING,
+	}
+	rProxy := p.pingProxy()
+	fmt.Println("Select: ", rProxy.Addr)
+
+	fmt.Println("Proxy0: ", p.ProxyHosts[0].Addr)
 }

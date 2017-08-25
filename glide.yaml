@@ -3,10 +3,3 @@ import:
 - package: github.com/miekg/dns
 - package: github.com/wrfly/goproxy
   version: ^1.0.0
-- package: github.com/wrfly/gus-proxy
-  subpackages:
-  - config
-  - prox
-  - round
-  - types
-  - utils
