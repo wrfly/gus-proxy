@@ -1,5 +1,5 @@
 package: gus-proxy
 import:
-- package: github.com/elazarl/goproxy
-  version: ^1.0.0
+- package: github.com/wrfly/goproxy
+  version: 104ea0174d4568c542c1ae80509c56dfab16cb91
 - package: github.com/miekg/dns

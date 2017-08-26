@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/elazarl/goproxy"
+	"github.com/wrfly/goproxy"
 	"github.com/wrfly/gus-proxy/types"
 	"github.com/wrfly/gus-proxy/utils"
 )
@@ -26,6 +26,7 @@ type Proxy struct {
 }
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	// rebuild request
 	r.URL.Host = utils.SelectIP(r.Host)
 	r.Header.Set("User-Agent", utils.RandomUA())

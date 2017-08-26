@@ -7,7 +7,7 @@ import (
 
 func TestLoadHostFile(t *testing.T) {
 	c := Config{
-		ProxyHostsFile: "/tmp/proxyhosts",
+		ProxyHostsFile: "../proxyhosts.txt",
 	}
 	hosts, err := c.LoadHosts()
 	if err != nil {

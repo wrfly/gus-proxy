@@ -25,10 +25,6 @@ func TestRoundProxy(t *testing.T) {
 	ava := true
 	hosts := []*types.ProxyHost{
 		&types.ProxyHost{
-			Addr:      "http://61.130.97.212:8099",
-			Available: ava,
-		},
-		&types.ProxyHost{
 			Addr:      "socks5://127.0.0.1:1080",
 			Available: ava,
 		},
@@ -38,23 +34,23 @@ func TestRoundProxy(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, proxys)
 
-	logrus.Info(proxys)
-
-	l, err := net.Listen("tcp4", "127.0.0.1:8080")
+	time.Sleep(1 * time.Second)
+	l, err := net.Listen("tcp4", "127.0.0.1:8082")
 	assert.NoError(t, err)
+	assert.NotNil(t, l)
 	go http.Serve(l, New(proxys))
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(6 * time.Second)
 }
 
 func TestCurlIPWithProxy(t *testing.T) {
 	log.SetOutput(os.Stdout)
 
-	ava := false
-	localProxy := "127.0.0.1:8080"
+	ava := true
+	localProxy := "127.0.0.1:8081"
 	hosts := []*types.ProxyHost{
 		&types.ProxyHost{
-			Addr:      "http://61.130.97.212:8099",
+			Addr:      "http://127.0.0.1:1081",
 			Available: ava,
 		},
 		&types.ProxyHost{
@@ -67,11 +63,13 @@ func TestCurlIPWithProxy(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, proxys)
 
+	time.Sleep(1 * time.Second)
 	l, err := net.Listen("tcp4", localProxy)
 	assert.NoError(t, err)
+	assert.NotNil(t, l)
 	go http.Serve(l, New(proxys))
 
-	proxyURL, _ := url.Parse("http://localhost:8080")
+	proxyURL, _ := url.Parse("http://localhost:8081")
 	clnt := &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyURL(proxyURL),
