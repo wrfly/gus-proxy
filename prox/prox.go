@@ -6,7 +6,7 @@ import (
 	"net/url"
 
 	"github.com/sirupsen/logrus"
-	"github.com/wrfly/goproxy"
+	"github.com/elazarl/goproxy"
 	"github.com/wrfly/gus-proxy/types"
 	"golang.org/x/net/proxy"
 )

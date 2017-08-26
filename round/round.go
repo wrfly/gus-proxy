@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/wrfly/goproxy"
+	"github.com/elazarl/goproxy"
 	"github.com/wrfly/gus-proxy/types"
 	"github.com/wrfly/gus-proxy/utils"
 )

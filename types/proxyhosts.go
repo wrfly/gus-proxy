@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/wrfly/goproxy"
+	"github.com/elazarl/goproxy"
 	"golang.org/x/net/proxy"
 )
 

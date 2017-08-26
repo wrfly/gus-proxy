@@ -1,8 +1,8 @@
-hash: 24b5349a816abaf1e8f0b7b70bea759c75a50929f318fa17216e0338fc056964
-updated: 2017-08-24T18:00:41.491616334+08:00
+hash: 79fbf7ec11306ca20b27c11318f210ed2a32bd300320eddbc2afd1d94c5367ac
+updated: 2017-08-26T10:03:06.717575574+08:00
 imports:
+- name: github.com/elazarl/goproxy
+  version: 0a5b8bdb09049ae4ae68e75437ded0b7a2e324e3
 - name: github.com/miekg/dns
   version: e4205768578dc90c2669e75a2f8a8bf77e3083a4
-- name: github.com/wrfly/goproxy
-  version: 0a5b8bdb09049ae4ae68e75437ded0b7a2e324e3
 testImports: []

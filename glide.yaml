@@ -1,5 +1,5 @@
-package: .
+package: gus-proxy
 import:
-- package: github.com/miekg/dns
-- package: github.com/wrfly/goproxy
+- package: github.com/elazarl/goproxy
   version: ^1.0.0
+- package: github.com/miekg/dns
