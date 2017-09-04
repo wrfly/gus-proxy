@@ -1,5 +1,13 @@
-package: gus-proxy
+package: github.com/wrfly/gus-proxy
 import:
-- package: github.com/wrfly/goproxy
-  version: 104ea0174d4568c542c1ae80509c56dfab16cb91
 - package: github.com/miekg/dns
+- package: github.com/sirupsen/logrus
+- package: github.com/wrfly/goproxy
+- package: golang.org/x/net
+  subpackages:
+  - proxy
+- package: gopkg.in/urfave/cli.v1
+testImport:
+- package: github.com/stretchr/testify
+  subpackages:
+  - assert

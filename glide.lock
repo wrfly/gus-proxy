@@ -1,8 +1,37 @@
-hash: bda2219357cd156dd4fc5e19b51d85b0fa56a17e4c12be5a699ba79af6e007aa
-updated: 2017-08-26T16:25:30.958569992+08:00
+hash: a2e7c320a5c36e2198314c3588a3a778630134cf95d340114dcc75ff5ac517a3
+updated: 2017-09-04T12:47:32.340873169+08:00
 imports:
 - name: github.com/miekg/dns
   version: e4205768578dc90c2669e75a2f8a8bf77e3083a4
+- name: github.com/sirupsen/logrus
+  version: 89742aefa4b206dcf400792f3bd35b542998eb3b
 - name: github.com/wrfly/goproxy
   version: 104ea0174d4568c542c1ae80509c56dfab16cb91
-testImports: []
+- name: golang.org/x/crypto
+  version: 81e90905daefcd6fd217b62423c0908922eadb30
+  subpackages:
+  - ssh/terminal
+- name: golang.org/x/net
+  version: 66aacef3dd8a676686c7ae3716979581e8b03c47
+  subpackages:
+  - proxy
+- name: golang.org/x/sys
+  version: 7ddbeae9ae08c6a06a59597f0c9edbc5ff2444ce
+  subpackages:
+  - unix
+  - windows
+- name: gopkg.in/urfave/cli.v1
+  version: cfb38830724cc34fedffe9a2a29fb54fa9169cd1
+testImports:
+- name: github.com/davecgh/go-spew
+  version: a476722483882dd40b8111f0eb64e1d7f43f56e4
+  subpackages:
+  - spew
+- name: github.com/pmezard/go-difflib
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  subpackages:
+  - difflib
+- name: github.com/stretchr/testify
+  version: 890a5c3458b43e6104ff5da8dfa139d013d77544
+  subpackages:
+  - assert
