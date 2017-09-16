@@ -1,8 +1,10 @@
 package: github.com/wrfly/gus-proxy
 import:
 - package: github.com/miekg/dns
+- package: github.com/boltdb/bolt
+  version: v1.3.1
 - package: github.com/sirupsen/logrus
-- package: github.com/wrfly/goproxy
+  version: v1.0.3
 - package: golang.org/x/net
   subpackages:
   - proxy

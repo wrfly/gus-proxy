@@ -1,10 +1,12 @@
-hash: a2e7c320a5c36e2198314c3588a3a778630134cf95d340114dcc75ff5ac517a3
-updated: 2017-09-04T12:47:32.340873169+08:00
+hash: 5aff4991c90cc0c4b5f89892278ed647db442eade59d150b2020558ef68309b8
+updated: 2017-09-17T01:44:37.236261411+08:00
 imports:
+- name: github.com/boltdb/bolt
+  version: 2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8
 - name: github.com/miekg/dns
   version: e4205768578dc90c2669e75a2f8a8bf77e3083a4
 - name: github.com/sirupsen/logrus
-  version: 89742aefa4b206dcf400792f3bd35b542998eb3b
+  version: f006c2ac4710855cf0f916dd6b77acf6b048dc6e
 - name: github.com/wrfly/goproxy
   version: 104ea0174d4568c542c1ae80509c56dfab16cb91
 - name: golang.org/x/crypto
