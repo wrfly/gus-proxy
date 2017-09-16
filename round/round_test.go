@@ -38,7 +38,7 @@ func TestRoundProxy(t *testing.T) {
 	l, err := net.Listen("tcp4", "127.0.0.1:8082")
 	assert.NoError(t, err)
 	assert.NotNil(t, l)
-	go http.Serve(l, New(proxys))
+	go http.Serve(l, New(proxys, nil, ""))
 
 	time.Sleep(6 * time.Second)
 }
@@ -67,7 +67,7 @@ func TestCurlIPWithProxy(t *testing.T) {
 	l, err := net.Listen("tcp4", localProxy)
 	assert.NoError(t, err)
 	assert.NotNil(t, l)
-	go http.Serve(l, New(proxys))
+	go http.Serve(l, New(proxys, nil, ""))
 
 	proxyURL, _ := url.Parse("http://localhost:8081")
 	clnt := &http.Client{

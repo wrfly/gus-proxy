@@ -45,8 +45,11 @@ var userAgents = []string{
 	"Mozilla/5.0 (X11; Linux x86_64; rv:28.0) Gecko/20100101 Firefox/28.0",
 }
 
-// RandomUA returns a random user-agent
-func RandomUA() string {
+// SelectUA returns a random user-agent
+func SelectUA(defaultUA string) string {
+	if defaultUA != "" {
+		return defaultUA
+	}
 	source := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(source)
 	i := r.Int() % len(userAgents)

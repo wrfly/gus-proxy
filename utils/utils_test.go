@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/wrfly/gus-proxy/db"
 	"github.com/wrfly/gus-proxy/types"
 )
 
@@ -13,7 +14,7 @@ func TestPing(t *testing.T) {
 	host := &types.ProxyHost{
 		Addr: "http://8.8.8.8:1080",
 	}
-	t.Log(GetProxyPing(host))
+	fmt.Println(GetProxyPing(host))
 }
 
 func Test(t *testing.T) {
@@ -44,12 +45,17 @@ func TestCheckProxyAvailable(t *testing.T) {
 }
 
 func TestDig(t *testing.T) {
-	t.Log(SelectIP("kfd.me"))
-	t.Log(SelectIP("kfd.me:8080"))
-	t.Log(SelectIP("kfd.me"))
-	t.Log(SelectIP("www.zhihu.com"))
+	dnsDB := &db.DNS{}
+	dnsDB.Open()
+	defer dnsDB.Close()
+
+	fmt.Println(SelectIP("kfd.me", dnsDB))
+	fmt.Println(SelectIP("kfd.me:8080", dnsDB))
+	fmt.Println(SelectIP("kfd.me", dnsDB))
+	fmt.Println(SelectIP("www.zhihu.com", dnsDB))
 }
 
-func TestRandomUA(t *testing.T) {
-	t.Log(RandomUA())
+func TestSelectUA(t *testing.T) {
+	fmt.Println(SelectUA(""))
+	fmt.Println(SelectUA("curl"))
 }

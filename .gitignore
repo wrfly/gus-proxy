@@ -2,3 +2,4 @@ gus-proxy
 vendor/*
 debug.test
 proxyhosts_test.txt
+.vscode/*

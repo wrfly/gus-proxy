@@ -21,6 +21,7 @@ type Config struct {
 	ProxyHostsFile string
 	Scheduler      string
 	ListenPort     string
+	UA             string
 	ProxyHosts     []*types.ProxyHost
 }
 

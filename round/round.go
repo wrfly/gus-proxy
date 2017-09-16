@@ -8,6 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/wrfly/goproxy"
+	"github.com/wrfly/gus-proxy/db"
 	"github.com/wrfly/gus-proxy/types"
 	"github.com/wrfly/gus-proxy/utils"
 )
@@ -22,14 +23,16 @@ const (
 type Proxy struct {
 	ProxyHosts []*types.ProxyHost
 	Scheduler  string // round-robin/random/ping
+	ua         string
+	dnsDB      *db.DNS
 	next       int
 }
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	// rebuild request
-	r.URL.Host = utils.SelectIP(r.Host)
-	r.Header.Set("User-Agent", utils.RandomUA())
+	r.URL.Host = utils.SelectIP(r.Host, p.dnsDB)
+	r.Header.Set("User-Agent", utils.SelectUA(p.ua))
 
 	selectedProxy := p.SelectProxy()
 	if selectedProxy != nil {
@@ -133,11 +136,13 @@ func (p *Proxy) pingProxy() *types.ProxyHost {
 }
 
 // New round proxy servers
-func New(proxyHosts []*types.ProxyHost) *Proxy {
+func New(proxyHosts []*types.ProxyHost, DNSdb *db.DNS, defaultUA string) *Proxy {
 	if len(proxyHosts) == 0 {
 		logrus.Fatal("No avaliable proxy to use")
 	}
 	return &Proxy{
 		ProxyHosts: proxyHosts,
+		dnsDB:      DNSdb,
+		ua:         defaultUA,
 	}
 }
