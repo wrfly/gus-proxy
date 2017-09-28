@@ -85,7 +85,7 @@ func (c *Config) LoadHosts() ([]*types.ProxyHost, error) {
 // UpdateProxys update proxy's attr
 func (c *Config) UpdateProxys() {
 	var wg sync.WaitGroup
-	avaliableProxy := struct {
+	availableProxy := struct {
 		Num  int
 		Lock sync.Mutex
 	}{}
@@ -96,9 +96,9 @@ func (c *Config) UpdateProxys() {
 			defer wg.Done()
 			proxy.Available = false
 			if utils.CheckProxyAvailable(proxy) == nil {
-				avaliableProxy.Lock.Lock()
-				avaliableProxy.Num++
-				avaliableProxy.Lock.Unlock()
+				availableProxy.Lock.Lock()
+				availableProxy.Num++
+				availableProxy.Lock.Unlock()
 				proxy.Available = true
 			}
 			proxy.Ping = utils.GetProxyPing(proxy)
@@ -108,15 +108,15 @@ func (c *Config) UpdateProxys() {
 	}
 	wg.Wait()
 
-	avaliableNum := avaliableProxy.Num
+	availableNum := availableProxy.Num
 	totalNum := len(c.ProxyHosts)
 	switch { // mast in this order (small to big)
-	case avaliableNum*4 <= totalNum:
-		logrus.Errorf("Not enough avaliable proxys, avaliable: [%d] total: [%d], I'm angry!",
-			avaliableNum, totalNum)
+	case availableNum*4 <= totalNum:
+		logrus.Errorf("Not enough available proxys, available: [%d] total: [%d], I'm angry!",
+			availableNum, totalNum)
 		// some alert
-	case avaliableNum*2 <= totalNum:
-		logrus.Warnf("Half of the proxys was down, avaliable: [%d] total: [%d], I'm worried...",
-			avaliableNum, totalNum)
+	case availableNum*2 <= totalNum:
+		logrus.Warnf("Half of the proxys was down, available: [%d] total: [%d], I'm worried...",
+			availableNum, totalNum)
 	}
 }

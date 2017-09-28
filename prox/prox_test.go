@@ -35,8 +35,8 @@ func TestNew(t *testing.T) {
 	logrus.SetOutput(os.Stdout)
 
 	hosts := []*types.ProxyHost{
-		&types.ProxyHost{Addr: "socks5://127.0.0.1:1080"},
-		&types.ProxyHost{Addr: "https://127.0.0.1:1081"},
+		{Addr: "socks5://127.0.0.1:1080"},
+		{Addr: "https://127.0.0.1:1081"},
 	}
 	proxs, err := New(hosts)
 	assert.NoError(t, err)

@@ -24,7 +24,7 @@ func TestRoundProxy(t *testing.T) {
 
 	ava := true
 	hosts := []*types.ProxyHost{
-		&types.ProxyHost{
+		{
 			Addr:      "socks5://127.0.0.1:1080",
 			Available: ava,
 		},
@@ -49,11 +49,11 @@ func TestCurlIPWithProxy(t *testing.T) {
 	ava := true
 	localProxy := "127.0.0.1:8081"
 	hosts := []*types.ProxyHost{
-		&types.ProxyHost{
+		{
 			Addr:      "http://127.0.0.1:1081",
 			Available: ava,
 		},
-		&types.ProxyHost{
+		{
 			Addr:      "socks5://127.0.0.1:1080",
 			Available: ava,
 		},

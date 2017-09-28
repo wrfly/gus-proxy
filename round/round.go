@@ -19,7 +19,7 @@ const (
 	PING        = "ping"
 )
 
-// Proxy ...
+// Proxy main structure
 type Proxy struct {
 	ProxyHosts []*types.ProxyHost
 	Scheduler  string // round-robin/random/ping
@@ -44,8 +44,8 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	// when thereis no proxy avaliable, we connect the target directly
-	logrus.Error("No proxy avaliable, direct connect")
+	// when thereis no proxy available, we connect the target directly
+	logrus.Error("No proxy available, direct connect")
 	gp := goproxy.NewProxyHttpServer()
 	gp.ServeHTTP(w, r)
 }
@@ -53,14 +53,14 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // SelectProxy returns a proxy depends on your scheduler
 func (p *Proxy) SelectProxy() (rProxy *types.ProxyHost) {
 	// make sure that we can select one at least
-	proxyAvaliable := false
+	proxyavailable := false
 	for _, p := range p.ProxyHosts {
 		if p.Available {
-			proxyAvaliable = true
+			proxyavailable = true
 			break
 		}
 	}
-	if !proxyAvaliable {
+	if !proxyavailable {
 		return nil
 	}
 
@@ -93,44 +93,44 @@ func (p *Proxy) roundRobin() *types.ProxyHost {
 }
 
 func (p *Proxy) randomProxy() *types.ProxyHost {
-	avaliableProxy := []*types.ProxyHost{}
+	availableProxy := []*types.ProxyHost{}
 	for _, p := range p.ProxyHosts {
 		if p.Available {
-			avaliableProxy = append(avaliableProxy, p)
+			availableProxy = append(availableProxy, p)
 		}
 	}
 
 	source := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(source)
-	use := r.Int() % len(avaliableProxy)
-	rProxy := avaliableProxy[use]
+	use := r.Int() % len(availableProxy)
+	rProxy := availableProxy[use]
 
 	return rProxy
 }
 
 func (p *Proxy) pingProxy() *types.ProxyHost {
-	avaliableProxy := []*types.ProxyHost{}
+	availableProxy := []*types.ProxyHost{}
 	for _, p := range p.ProxyHosts {
 		if p.Available {
-			avaliableProxy = append(avaliableProxy, p)
+			availableProxy = append(availableProxy, p)
 		}
 	}
 
-	sort.Slice(avaliableProxy, func(i, j int) bool {
-		return avaliableProxy[i].Ping < avaliableProxy[j].Ping
+	sort.Slice(availableProxy, func(i, j int) bool {
+		return availableProxy[i].Ping < availableProxy[j].Ping
 	})
 
 	source := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(source)
 	// 随机取前1/3 || len
 	use := r.Int() % (func() int {
-		l := len(avaliableProxy)
+		l := len(availableProxy)
 		if l <= 3 {
 			return l
 		}
 		return l / 3
 	}())
-	rProxy := avaliableProxy[use]
+	rProxy := availableProxy[use]
 
 	return rProxy
 }
@@ -138,7 +138,7 @@ func (p *Proxy) pingProxy() *types.ProxyHost {
 // New round proxy servers
 func New(proxyHosts []*types.ProxyHost, DNSdb *db.DNS, defaultUA string) *Proxy {
 	if len(proxyHosts) == 0 {
-		logrus.Fatal("No avaliable proxy to use")
+		logrus.Fatal("No available proxy to use")
 	}
 	return &Proxy{
 		ProxyHosts: proxyHosts,

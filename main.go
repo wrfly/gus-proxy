@@ -51,7 +51,7 @@ func main() {
 		cli.StringFlag{
 			Name:        "ua, u",
 			Value:       "",
-			Usage:       "specfic UA, random UA if empty",
+			Usage:       "specific UA, random UA if empty",
 			Destination: &conf.UA,
 		},
 	}
