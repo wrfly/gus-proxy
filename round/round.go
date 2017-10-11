@@ -29,6 +29,7 @@ type Proxy struct {
 }
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	logrus.Debugf("Request: %v", r.URL)
 	defer r.Body.Close()
 	// rebuild request
 	r.URL.Host = utils.SelectIP(r.Host, p.dnsDB)
@@ -36,6 +37,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	selectedProxy := p.SelectProxy()
 	if selectedProxy != nil {
+		logrus.Debugf("Use proxy: %s", selectedProxy.Addr)
 		selectedProxy.GoProxy.ServeHTTP(w, r)
 		if w.Header().Get("PROXY_CODE") == "500" {
 			selectedProxy.Available = false
@@ -76,7 +78,6 @@ ReSelect:
 	if !rProxy.Available {
 		goto ReSelect
 	}
-	logrus.Debugf("Use proxy: %s", rProxy.Addr)
 
 	return rProxy
 }
@@ -137,6 +138,7 @@ func (p *Proxy) pingProxy() *types.ProxyHost {
 
 // New round proxy servers
 func New(proxyHosts []*types.ProxyHost, DNSdb *db.DNS, defaultUA string) *Proxy {
+	logrus.Debugf("init proxy")
 	if len(proxyHosts) == 0 {
 		logrus.Fatal("No available proxy to use")
 	}

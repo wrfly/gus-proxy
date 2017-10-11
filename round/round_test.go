@@ -20,7 +20,7 @@ import (
 )
 
 func TestRoundProxy(t *testing.T) {
-	log.SetOutput(os.Stdout)
+	logrus.SetOutput(os.Stdout)
 
 	ava := true
 	hosts := []*types.ProxyHost{
@@ -44,7 +44,7 @@ func TestRoundProxy(t *testing.T) {
 }
 
 func TestCurlIPWithProxy(t *testing.T) {
-	log.SetOutput(os.Stdout)
+	logrus.SetOutput(os.Stdout)
 
 	ava := true
 	localProxy := "127.0.0.1:8081"

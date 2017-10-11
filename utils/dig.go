@@ -22,8 +22,8 @@ func SelectIP(host string, dnsDB *db.DNS) string {
 		port = str[1]
 	}
 
-	ips := dnsDB.Query(host)
-	logrus.Debugf("Query DB IP: %v", ips)
+	ips := dnsDB.Query(domain)
+	logrus.Debugf("Query %s IP: %v", domain, ips)
 	// not found in db
 	if len(ips) == 0 {
 		digIPs, err := dig(domain) // shadow value

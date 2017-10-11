@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/wrfly/gus-proxy/config"
 	"github.com/wrfly/gus-proxy/db"
 	"github.com/wrfly/gus-proxy/prox"
@@ -58,7 +58,7 @@ func main() {
 
 	app.Action = func(c *cli.Context) error {
 		if c.Bool("debug") {
-			log.SetLevel(log.DebugLevel)
+			logrus.SetLevel(logrus.DebugLevel)
 		}
 		runGus(conf)
 		return nil
@@ -68,25 +68,25 @@ func main() {
 }
 
 func runGus(conf *config.Config) {
-	log.Info("Gus is starting...")
+	logrus.Info("Gus is starting...")
 
 	if !conf.Validate() {
-		log.Fatal("Verify config error, exit.")
+		logrus.Fatal("Verify config error, exit.")
 	}
 
 	hosts, err := conf.LoadHosts()
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 
-	log.Info("Creating proxys...")
+	logrus.Info("Creating proxys...")
 	conf.ProxyHosts, err = prox.New(hosts)
 	if err != nil {
-		log.Fatalf("Create proxys error: %s", err)
+		logrus.Fatalf("Create proxys error: %s", err)
 	}
 
 	// update proxy status
-	log.Info("Updating proxys...")
+	logrus.Info("Updating proxys...")
 	upChan := make(chan interface{})
 	go func() {
 		for {
@@ -99,30 +99,30 @@ func runGus(conf *config.Config) {
 	close(upChan)
 
 	// handle signals
-	log.Debug("handle sigs")
+	logrus.Debug("handle sigs")
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	// init db
-	log.Debug("init dns db")
+	logrus.Debug("init dns db")
 	DNSdb := &db.DNS{}
 	if err := DNSdb.Open(); err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 	defer DNSdb.Close()
 
 	go func() {
-		log.Debug("bind port and run")
+		logrus.Debug("bind port and run")
 		l, err := net.Listen("tcp4", conf.ListenPort)
 		if err != nil {
-			log.Fatalf("Bind port error: %s", err)
+			logrus.Fatalf("Bind port error: %s", err)
 		}
 
 		h := round.New(conf.ProxyHosts, DNSdb, conf.UA)
-		log.Info("Gus is running...")
-		log.Fatal(http.Serve(l, h))
+		logrus.Info("Gus is running...")
+		logrus.Fatal(http.Serve(l, h))
 	}()
 
 	<-sigs
-	log.Info("Gus stopped")
+	logrus.Info("Gus stopped")
 }
