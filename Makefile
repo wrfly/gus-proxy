@@ -1,5 +1,5 @@
 test:
-	go test -v `glide nv`
+	go test -cover -v `glide nv`
 
 build:
 	go build -o gus-proxy

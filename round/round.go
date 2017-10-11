@@ -139,6 +139,9 @@ func (p *Proxy) pingProxy() *types.ProxyHost {
 // New round proxy servers
 func New(proxyHosts []*types.ProxyHost, DNSdb *db.DNS, defaultUA string) *Proxy {
 	logrus.Debugf("init proxy")
+	if DNSdb == nil {
+		logrus.Fatal("DNS DB is nil")
+	}
 	if len(proxyHosts) == 0 {
 		logrus.Fatal("No available proxy to use")
 	}

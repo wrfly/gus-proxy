@@ -105,8 +105,8 @@ func runGus(conf *config.Config) {
 
 	// init db
 	logrus.Debug("init dns db")
-	DNSdb := &db.DNS{}
-	if err := DNSdb.Open(); err != nil {
+	DNSdb, err := db.New()
+	if err != nil {
 		logrus.Fatal(err)
 	}
 	defer DNSdb.Close()

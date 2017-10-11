@@ -3,7 +3,6 @@ package round
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net"
 	"net/http"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/wrfly/gus-proxy/db"
 	"github.com/wrfly/gus-proxy/prox"
 	"github.com/wrfly/gus-proxy/types"
 )
@@ -38,7 +38,13 @@ func TestRoundProxy(t *testing.T) {
 	l, err := net.Listen("tcp4", "127.0.0.1:8082")
 	assert.NoError(t, err)
 	assert.NotNil(t, l)
-	go http.Serve(l, New(proxys, nil, ""))
+
+	DNSdb, err := db.New()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	defer DNSdb.Close()
+	go http.Serve(l, New(proxys, DNSdb, ""))
 
 	time.Sleep(6 * time.Second)
 }
@@ -67,7 +73,13 @@ func TestCurlIPWithProxy(t *testing.T) {
 	l, err := net.Listen("tcp4", localProxy)
 	assert.NoError(t, err)
 	assert.NotNil(t, l)
-	go http.Serve(l, New(proxys, nil, ""))
+
+	DNSdb, err := db.New()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	defer DNSdb.Close()
+	go http.Serve(l, New(proxys, DNSdb, ""))
 
 	proxyURL, _ := url.Parse("http://localhost:8081")
 	clnt := &http.Client{

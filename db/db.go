@@ -15,18 +15,18 @@ type DNS struct {
 }
 
 // Open a database file,create one if not exist
-func (d *DNS) Open() error {
+func New() (*DNS, error) {
 	dbFileName := path.Join(os.TempDir(), "gus-dns.db")
 	if _, err := os.Stat(dbFileName); os.IsNotExist(err) {
 		// create the file
 		_, err := os.Create(dbFileName)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	db, err := bolt.Open(dbFileName, 0600, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	db.Update(func(tx *bolt.Tx) error {
@@ -36,9 +36,10 @@ func (d *DNS) Open() error {
 		}
 		return nil
 	})
-
-	d.db = db
-	return nil
+	dnsDB := &DNS{
+		db: db,
+	}
+	return dnsDB, nil
 }
 
 // Close the DB

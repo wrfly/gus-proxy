@@ -45,8 +45,7 @@ func TestCheckProxyAvailable(t *testing.T) {
 }
 
 func TestDig(t *testing.T) {
-	dnsDB := &db.DNS{}
-	dnsDB.Open()
+	dnsDB, _ := db.New()
 	defer dnsDB.Close()
 
 	fmt.Println(SelectIP("kfd.me", dnsDB))

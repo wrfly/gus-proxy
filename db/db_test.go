@@ -8,11 +8,11 @@ import (
 )
 
 func TestDB(t *testing.T) {
-	dnsDB := DNS{}
-	dnsDB.Open()
+	dnsDB, err := New()
+	assert.NoError(t, err)
 	defer dnsDB.Close()
 
-	err := dnsDB.SetDNS("kfd.me", []string{"8.8.8.8", "1.1.1.2"})
+	err = dnsDB.SetDNS("kfd.me", []string{"8.8.8.8", "1.1.1.2"})
 	assert.NoError(t, err)
 
 	a := dnsDB.Query("kfd.me")
