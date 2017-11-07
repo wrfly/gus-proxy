@@ -1,3 +1,5 @@
+.PHONY: test build dev curl
+
 test:
 	go test -cover -v `glide nv`
 
@@ -6,7 +8,7 @@ build:
 
 dev:
 	go build -o gus-proxy
-	./gus-proxy -f proxyhosts_test.txt -d
+	./gus-proxy run -f proxyhosts_test.txt -d
 
 curl:
 	for i in 1 2 3 4 5 ;do \

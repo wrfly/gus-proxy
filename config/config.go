@@ -18,6 +18,7 @@ import (
 
 // Config ...
 type Config struct {
+	Debug          bool
 	ProxyHostsFile string
 	Scheduler      string
 	ListenPort     string
