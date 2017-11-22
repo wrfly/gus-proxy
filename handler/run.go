@@ -23,12 +23,13 @@ func Run() cli.Command {
 		cli.StringFlag{
 			Name:        "file, f",
 			Value:       "proxyhosts.txt",
-			Usage:       "host list contains the proxys",
-			Destination: &conf.ProxyHostsFile,
+			Usage:       "proxy file path, filepath or URL",
+			Destination: &conf.ProxyFilePath,
 		},
 		cli.BoolFlag{
-			Name:  "debug, d",
-			Usage: "debug mode",
+			Name:        "debug, d",
+			Usage:       "debug mode",
+			Destination: &conf.Debug,
 		},
 		cli.StringFlag{
 			Name:        "schduler, s",
@@ -66,8 +67,8 @@ func runGus(conf *config.Config) error {
 	}
 	logrus.Info("Gus is starting...")
 
-	if !conf.Validate() {
-		logrus.Fatal("Verify config error, exit.")
+	if err := conf.Validate(); err != nil {
+		logrus.Fatalf("Verify config error: %s", err)
 	}
 
 	hosts, err := conf.LoadHosts()

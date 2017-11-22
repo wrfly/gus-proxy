@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -18,47 +19,71 @@ import (
 
 // Config ...
 type Config struct {
-	Debug          bool
-	ProxyHostsFile string
-	Scheduler      string
-	ListenPort     string
-	UA             string
-	ProxyHosts     []*types.ProxyHost
+	Debug              bool
+	ProxyFilePath      string
+	ProxyFilePathIsURL bool
+	Scheduler          string
+	ListenPort         string
+	UA                 string
+	ProxyHosts         []*types.ProxyHost
 }
 
 // Validate the config
-func (c *Config) Validate() bool {
-	_, err := os.Open(c.ProxyHostsFile)
+func (c *Config) Validate() error {
+	logrus.Debugf("get proxyfile [%s]", c.ProxyFilePath)
+	_, err := os.Open(c.ProxyFilePath)
 	if err != nil && os.IsNotExist(err) {
-		logrus.Errorf("Hostfile [%s] not exist", c.ProxyHostsFile)
-		return false
+		resp, err := http.DefaultClient.Get(c.ProxyFilePath)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("Hostfile [%s] not exist", c.ProxyFilePath)
+		}
+		c.ProxyFilePathIsURL = true
 	}
+
 	switch c.Scheduler {
 	case round.ROUND_ROBIN:
 	case round.RANDOM:
 	case round.PING:
 	default:
-		return false
+		return fmt.Errorf("Unknown scheduler: %s", c.Scheduler)
 	}
 
 	// listen port
 	c.ListenPort = fmt.Sprintf(":%s", c.ListenPort)
 	l, err := net.Listen("tcp4", c.ListenPort)
 	if err != nil {
-		logrus.Errorf("Can not bind this port: %s", err)
-		return false
+		return fmt.Errorf("Can not bind this port: %s", err)
 	}
 	defer l.Close()
-	return true
+
+	logrus.Debug("validate ok")
+	return nil
 }
 
 // LoadHosts returns the proxy hosts
 func (c *Config) LoadHosts() ([]*types.ProxyHost, error) {
+	logrus.Debug("load proxy hosts")
 	proxyHosts := []*types.ProxyHost{}
-	f, _ := os.Open(c.ProxyHostsFile)
-	r := bufio.NewReader(f)
+	var proxyfile io.ReadCloser
+	if c.ProxyFilePathIsURL {
+		resp, err := http.DefaultClient.Get(c.ProxyFilePath)
+		if err != nil {
+			return nil, err
+		}
+		proxyfile = resp.Body
+	} else {
+		proxyfile, _ = os.Open(c.ProxyFilePath)
+	}
+	defer proxyfile.Close()
+	lines := bufio.NewReader(proxyfile)
+	var lnum int
 	for {
-		s, err := r.ReadString('\n')
+		lnum++
+		s, err := lines.ReadString('\n')
 		if err != nil && s == "" {
 			if err == io.EOF {
 				break
@@ -68,9 +93,14 @@ func (c *Config) LoadHosts() ([]*types.ProxyHost, error) {
 
 		// verify hosts
 		s = strings.TrimRight(s, "\n")
-		_, err = url.Parse(s)
+		logrus.Debugf("validate proxy format: %s", s)
+		proxyline, err := url.Parse(s)
 		if err != nil {
 			return nil, err
+		}
+		if !proxyline.IsAbs() {
+			return nil, fmt.Errorf("Proxy has a empty scheme: %s,file: %s,line %d",
+				proxyline, c.ProxyFilePath, lnum)
 		}
 
 		host := &types.ProxyHost{
