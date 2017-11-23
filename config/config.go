@@ -91,6 +91,10 @@ func (c *Config) LoadHosts() ([]*types.ProxyHost, error) {
 			return nil, err
 		}
 
+		if s[0] == '#' {
+			continue
+		}
+
 		// verify hosts
 		s = strings.TrimRight(s, "\n")
 		logrus.Debugf("validate proxy format: %s", s)
