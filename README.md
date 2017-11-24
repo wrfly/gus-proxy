@@ -1,12 +1,14 @@
-# gus-proxy
-
-[![Build Status](https://travis-ci.org/wrfly/gus-proxy.svg?branch=master)](https://travis-ci.org/wrfly/gus-proxy)
-
-> 打一枪换一个地方
+# Gus-Proxy
 
 "gus - 绝命毒师里的大毒枭"
 
-## 构想
+[![Build Status](https://travis-ci.org/wrfly/gus-proxy.svg?branch=master)](https://travis-ci.org/wrfly/gus-proxy)
+
+---
+
+## Thoughts
+
+> 打一枪换一个地方
 
 1. 每次请求都从代理池中选取一个代理
 1. 但是这样会不会触发server端的验证，即session与IP匹配
@@ -15,7 +17,7 @@
 
 没问题。
 
-## 设计
+## Design
 
 1. 程序对上层表现为一个HTTP代理
 1. 程序加载一个代理列表（HTTP/Socks5） [或者默认配置一个代理列表]
@@ -25,7 +27,13 @@
 1. 每次请求替换UA
 1. 请求资源的时候，查询目标资源地址全部的IP，随机
 
-## 截图
+## Show off
 
 ![Gus-Running](img/gus-run.png)
 ![Curl-test](img/gus-curl.png)
+
+## Run
+
+```bash
+sudo docker run --rm -ti -p 8080:8080 wrfly/gus-proxy
+```
