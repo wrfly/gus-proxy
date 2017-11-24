@@ -17,6 +17,9 @@
 
 没问题。
 
+嗯……如果后端全是HTTP Proxy或者Socks5 Proxy，即代理类型统一的话，其实可以用Nginx的TCP reverse proxy，这样一想，我这个东西就有点鸡肋了,除了替换UA，dig域名这两个功能。
+（就当写着玩吧233
+
 ## Design
 
 1. 程序对上层表现为一个HTTP代理
