@@ -1,4 +1,4 @@
-package: github.com/wrfly/gus-proxy
+package: .
 import:
 - package: github.com/miekg/dns
 - package: github.com/boltdb/bolt

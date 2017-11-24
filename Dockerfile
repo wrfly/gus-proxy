@@ -1,8 +1,11 @@
 FROM wrfly/glide AS build
-COPY . /go
-RUN glide i &&\
+RUN mkdir -p /go/src/github.com/wrfly/gus-proxy
+COPY . /go/src/github.com/wrfly/gus-proxy
+RUN cd /go/src/github.com/wrfly/gus-proxy && \
+    glide i &&\
     make test &&\
-    make build
+    make build &&\
+    mv * /go
 
 FROM alpine
 COPY --from=build /go/gus-proxy /usr/local/bin
