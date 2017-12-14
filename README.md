@@ -2,6 +2,8 @@
 
 "gus - 绝命毒师里的大毒枭"
 
+"gus - the heavy-duty drug trafficker in *Breaking Bad*"
+
 [![Build Status](https://travis-ci.org/wrfly/gus-proxy.svg?branch=master)](https://travis-ci.org/wrfly/gus-proxy)
 
 ---
@@ -17,8 +19,14 @@
 
 没问题。
 
-嗯……如果后端全是HTTP Proxy或者Socks5 Proxy，即代理类型统一的话，其实可以用Nginx的TCP reverse proxy，这样一想，我这个东西就有点鸡肋了,除了替换UA，dig域名这两个功能。
-（就当写着玩吧233
+> Change our IP address every request
+
+1. Chose a different proxy in our proxy poll every request
+1. If our IP changed, the server side may not auth us because of the session-IP pair
+1. No use for session authentication
+1. The aim for this tool is to resolve the restrict of IP request limit
+
+Ok.
 
 ## Design
 
@@ -29,6 +37,14 @@
 1. 要验证proxy的可用性
 1. 每次请求替换UA
 1. 请求资源的时候，查询目标资源地址全部的IP，随机
+
+1. An top layer HTTP-proxy
+1. The program load a proxy list(HTTP or Socks5) during start
+1. Chose a proxy every request
+1. May have different choose algorithm: round-robin|random|ping
+1. Verify the availability of the proxy
+1. Change our UA every request(it's an option)
+1. Lookup target's all IP address, replace target host at random every request 
 
 ## Show off
 
