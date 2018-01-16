@@ -1,6 +1,7 @@
-package handler
+package cmds
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"os"
@@ -13,45 +14,55 @@ import (
 	"github.com/wrfly/gus-proxy/db"
 	"github.com/wrfly/gus-proxy/prox"
 	"github.com/wrfly/gus-proxy/round"
-	cli "gopkg.in/urfave/cli.v1"
+	"gopkg.in/urfave/cli.v2"
 )
 
-func Run() cli.Command {
+func Run() *cli.Command {
 	conf := &config.Config{}
 
 	runFlags := []cli.Flag{
-		cli.StringFlag{
-			Name:        "file, f",
+		&cli.StringFlag{
+			Name:        "file",
+			Aliases:     []string{"f"},
 			Value:       "proxyhosts.txt",
 			Usage:       "proxy file path, filepath or URL",
 			Destination: &conf.ProxyFilePath,
 		},
-		cli.BoolFlag{
-			Name:        "debug, d",
+		&cli.BoolFlag{
+			Name:        "debug",
+			Aliases:     []string{"d"},
 			Usage:       "debug mode",
 			Destination: &conf.Debug,
 		},
-		cli.StringFlag{
-			Name:        "schduler, s",
+		&cli.StringFlag{
+			Name:        "schduler",
+			Aliases:     []string{"s"},
 			Value:       "round-robin",
 			Usage:       "schduler: round-robin|ping|random",
 			Destination: &conf.Scheduler,
 		},
-		cli.StringFlag{
-			Name:        "listen, l",
+		&cli.StringFlag{
+			Name:        "listen",
+			Aliases:     []string{"l"},
 			Value:       "8080",
 			Usage:       "port to bind",
 			Destination: &conf.ListenPort,
 		},
-		cli.StringFlag{
-			Name:        "ua, u",
+		&cli.StringFlag{
+			Name:        "debug-port",
+			Value:       "8081",
+			Usage:       "port for pprof debug",
+			Destination: &conf.DebugPort,
+		},
+		&cli.StringFlag{
+			Name:        "ua",
 			Value:       "",
 			Usage:       "specific UA, random UA if empty",
 			Destination: &conf.UA,
 		},
 	}
 
-	return cli.Command{
+	return &cli.Command{
 		Name:  "run",
 		Usage: "Run gus-proxy",
 		Flags: runFlags,
@@ -82,14 +93,22 @@ func runGus(conf *config.Config) error {
 		logrus.Fatalf("Create proxys error: %s", err)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// update proxy status
 	logrus.Info("Updating proxys...")
 	upChan := make(chan interface{})
 	go func() {
-		for {
-			conf.UpdateProxys()
-			upChan <- true
-			time.Sleep(1000 * time.Second)
+		conf.UpdateProxys()
+		upChan <- true
+		tk := time.NewTicker(time.Second * 10)
+		defer tk.Stop()
+		for ctx.Err() == nil {
+			select {
+			case <-tk.C:
+				conf.UpdateProxys()
+			}
 		}
 	}()
 	<-upChan
@@ -109,7 +128,7 @@ func runGus(conf *config.Config) error {
 	defer DNSdb.Close()
 
 	go func() {
-		logrus.Debug("bind port and run")
+		logrus.Debugf("bind port [%s] and run", conf.ListenPort)
 		l, err := net.Listen("tcp4", conf.ListenPort)
 		if err != nil {
 			logrus.Fatalf("Bind port error: %s", err)
@@ -121,6 +140,8 @@ func runGus(conf *config.Config) error {
 	}()
 
 	<-sigs
+	cancel()
+
 	logrus.Info("Gus stopped")
 	return nil
 }

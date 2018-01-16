@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	"github.com/wrfly/gus-proxy/handler"
-	"gopkg.in/urfave/cli.v1"
+	"github.com/wrfly/gus-proxy/cmds"
+	"gopkg.in/urfave/cli.v2"
 )
 
 func main() {
@@ -12,10 +12,13 @@ func main() {
 		Name:    "gus-proxy",
 		Usage:   "An apple a day, keep the doctor away.",
 		Version: "0.3",
-		Author:  "wrfly",
-		Email:   "mr.wrfly@gmail.com",
-		Commands: []cli.Command{
-			handler.Run(),
+		Authors: []*cli.Author{
+			&cli.Author{
+				Name:  "wrfly",
+				Email: "mr.wrfly@gmail.com"},
+		},
+		Commands: []*cli.Command{
+			cmds.Run(),
 		},
 	}
 	app.Run(os.Args)

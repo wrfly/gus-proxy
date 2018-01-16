@@ -1,14 +1,16 @@
 .PHONY: test build dev curl
 
+NAME := "gus-proxy"
+
 test:
 	go test -cover -v `glide nv`
 
 build:
-	go build -o gus-proxy
+	go build -o $(NAME)
 
 dev:
-	go build -o gus-proxy
-	./gus-proxy run -f proxyhosts_test.txt -d
+	go build -o $(NAME)
+	./$(NAME) run -f proxyhosts_test.txt -d
 
 curl:
 	for i in 1 2 3 4 5 ;do \

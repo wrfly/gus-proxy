@@ -24,6 +24,7 @@ type Config struct {
 	ProxyFilePathIsURL bool
 	Scheduler          string
 	ListenPort         string
+	DebugPort          string
 	UA                 string
 	ProxyHosts         []*types.ProxyHost
 }
