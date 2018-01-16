@@ -2,19 +2,22 @@ package cmds
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"gopkg.in/urfave/cli.v2"
+
 	"github.com/wrfly/gus-proxy/config"
 	"github.com/wrfly/gus-proxy/db"
 	"github.com/wrfly/gus-proxy/prox"
 	"github.com/wrfly/gus-proxy/round"
-	"gopkg.in/urfave/cli.v2"
 )
 
 func Run() *cli.Command {
@@ -126,6 +129,15 @@ func runGus(conf *config.Config) error {
 		logrus.Fatal(err)
 	}
 	defer DNSdb.Close()
+
+	go func() {
+		if !conf.Debug {
+			return
+		}
+		addr := fmt.Sprintf(":%s", conf.DebugPort)
+		logrus.Debug("Debug is running...")
+		logrus.Fatal(http.ListenAndServe(addr, nil))
+	}()
 
 	go func() {
 		logrus.Debugf("bind port [%s] and run", conf.ListenPort)
