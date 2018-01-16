@@ -1,32 +1,39 @@
-hash: 5aff4991c90cc0c4b5f89892278ed647db442eade59d150b2020558ef68309b8
-updated: 2017-09-17T01:44:37.236261411+08:00
+hash: 2e314ded266d9eb20d49660a3f789f60cf74dac2d97a74c88e71cb7801ce6668
+updated: 2018-01-16T15:38:03.690568147Z
 imports:
 - name: github.com/boltdb/bolt
   version: 2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8
 - name: github.com/miekg/dns
-  version: e4205768578dc90c2669e75a2f8a8bf77e3083a4
+  version: 5ec25f2a5044291b6c8abf43ed8a201da241e69e
 - name: github.com/sirupsen/logrus
-  version: f006c2ac4710855cf0f916dd6b77acf6b048dc6e
+  version: d682213848ed68c0a260ca37d6dd5ace8423f5ba
 - name: github.com/wrfly/goproxy
   version: 104ea0174d4568c542c1ae80509c56dfab16cb91
 - name: golang.org/x/crypto
-  version: 81e90905daefcd6fd217b62423c0908922eadb30
+  version: 13931e22f9e72ea58bb73048bc752b48c6d4d4ac
   subpackages:
+  - ed25519
+  - ed25519/internal/edwards25519
   - ssh/terminal
 - name: golang.org/x/net
-  version: 66aacef3dd8a676686c7ae3716979581e8b03c47
+  version: 5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec
   subpackages:
+  - bpf
+  - internal/iana
+  - internal/socket
+  - ipv4
+  - ipv6
   - proxy
 - name: golang.org/x/sys
-  version: 7ddbeae9ae08c6a06a59597f0c9edbc5ff2444ce
+  version: fff93fa7cd278d84afc205751523809c464168ab
   subpackages:
   - unix
   - windows
-- name: gopkg.in/urfave/cli.v1
-  version: cfb38830724cc34fedffe9a2a29fb54fa9169cd1
+- name: gopkg.in/urfave/cli.v2
+  version: b2bf3c5abeb90da407891aecd1df2c5a1f6170c1
 testImports:
 - name: github.com/davecgh/go-spew
-  version: a476722483882dd40b8111f0eb64e1d7f43f56e4
+  version: ecdeabc65495df2dec95d7c4a4c3e021903035e5
   subpackages:
   - spew
 - name: github.com/pmezard/go-difflib
@@ -34,6 +41,6 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: 890a5c3458b43e6104ff5da8dfa139d013d77544
+  version: 87b1dfb5b2fa649f52695dd9eae19abe404a4308
   subpackages:
   - assert

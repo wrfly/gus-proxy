@@ -1,14 +1,15 @@
-package: .
+package: github.com/wrfly/gus-proxy
 import:
-- package: github.com/miekg/dns
 - package: github.com/boltdb/bolt
-  version: v1.3.1
+  version: 2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8
+- package: github.com/miekg/dns
+  version: 5ec25f2a5044291b6c8abf43ed8a201da241e69e
 - package: github.com/sirupsen/logrus
-  version: v1.0.3
-- package: golang.org/x/net
-  subpackages:
-  - proxy
-- package: gopkg.in/urfave/cli.v1
+  version: d682213848ed68c0a260ca37d6dd5ace8423f5ba
+- package: github.com/wrfly/goproxy
+- package: golang.org/x/net/proxy
+- package: gopkg.in/urfave/cli.v2
+  version: b2bf3c5abeb90da407891aecd1df2c5a1f6170c1
 testImport:
 - package: github.com/stretchr/testify
   subpackages:
