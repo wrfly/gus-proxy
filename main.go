@@ -11,11 +11,12 @@ func main() {
 	app := cli.App{
 		Name:    "gus-proxy",
 		Usage:   "An apple a day, keep the doctor away.",
-		Version: "0.3",
+		Version: "0.4",
 		Authors: []*cli.Author{
 			&cli.Author{
 				Name:  "wrfly",
-				Email: "mr.wrfly@gmail.com"},
+				Email: "mr.wrfly@gmail.com",
+			},
 		},
 		Commands: []*cli.Command{
 			cmds.Run(),

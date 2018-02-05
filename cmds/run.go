@@ -16,7 +16,6 @@ import (
 
 	"github.com/wrfly/gus-proxy/config"
 	"github.com/wrfly/gus-proxy/db"
-	"github.com/wrfly/gus-proxy/prox"
 	"github.com/wrfly/gus-proxy/round"
 )
 
@@ -63,6 +62,12 @@ func Run() *cli.Command {
 			Usage:       "specific UA, random UA if empty",
 			Destination: &conf.UA,
 		},
+		&cli.IntFlag{
+			Name:        "update",
+			Value:       10,
+			Usage:       "Proxies update interval(second)",
+			Destination: &conf.ProxyUpdate,
+		},
 	}
 
 	return &cli.Command{
@@ -85,37 +90,27 @@ func runGus(conf *config.Config) error {
 		logrus.Fatalf("Verify config error: %s", err)
 	}
 
-	hosts, err := conf.LoadHosts()
-	if err != nil {
-		logrus.Fatal(err)
-	}
-
-	logrus.Info("Creating proxys...")
-	conf.ProxyHosts, err = prox.New(hosts)
-	if err != nil {
-		logrus.Fatalf("Create proxys error: %s", err)
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// update proxy status
-	logrus.Info("Updating proxys...")
 	upChan := make(chan interface{})
 	go func() {
-		conf.UpdateProxys()
+		logrus.Info("Updating proxyies...")
+		conf.UpdateProxies()
 		upChan <- true
-		tk := time.NewTicker(time.Second * 10)
+		close(upChan)
+
+		tk := time.NewTicker(time.Second * time.Duration(conf.ProxyUpdate))
 		defer tk.Stop()
 		for ctx.Err() == nil {
 			select {
 			case <-tk.C:
-				conf.UpdateProxys()
+				conf.UpdateProxies()
 			}
 		}
 	}()
 	<-upChan
-	close(upChan)
 
 	// handle signals
 	logrus.Debug("handle sigs")
@@ -146,7 +141,7 @@ func runGus(conf *config.Config) error {
 			logrus.Fatalf("Bind port error: %s", err)
 		}
 
-		h := round.New(conf.ProxyHosts, DNSdb, conf.UA)
+		h := round.New(conf.ProxyHosts(), DNSdb, conf.UA)
 		logrus.Info("Gus is running...")
 		logrus.Fatal(http.Serve(l, h))
 	}()

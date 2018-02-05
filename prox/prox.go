@@ -37,7 +37,7 @@ func proxySocks5(socks5Addr string, auth proxy.Auth) (*goproxy.ProxyHttpServer, 
 	return prox, nil
 }
 
-// New returns proxys
+// New returns proxies
 func New(oHosts []*types.ProxyHost) ([]*types.ProxyHost, error) {
 	var err error
 	for _, host := range oHosts {
