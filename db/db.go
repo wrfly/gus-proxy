@@ -9,7 +9,11 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-// DNS DNS database
+var (
+	bktName = []byte("DNS")
+)
+
+// DNS database
 type DNS struct {
 	db *bolt.DB
 }
@@ -24,22 +28,22 @@ func New() (*DNS, error) {
 			return nil, err
 		}
 	}
-	db, err := bolt.Open(dbFileName, 0600, nil)
+	dnsDB, err := bolt.Open(dbFileName, 0600, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucket([]byte("DNS"))
+	dnsDB.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucket(bktName)
 		if err != nil {
 			return fmt.Errorf("create bucket: %s", err)
 		}
 		return nil
 	})
-	dnsDB := &DNS{
-		db: db,
-	}
-	return dnsDB, nil
+
+	return &DNS{
+		db: dnsDB,
+	}, nil
 }
 
 // Close the DB
@@ -56,7 +60,7 @@ func (d *DNS) Close() error {
 func (d *DNS) SetDNS(domain string, answer []string) error {
 	answerStr := strings.Join(answer, "|")
 	err := d.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("DNS"))
+		b := tx.Bucket(bktName)
 		err := b.Put([]byte(domain), []byte(answerStr))
 		return err
 	})
@@ -66,11 +70,14 @@ func (d *DNS) SetDNS(domain string, answer []string) error {
 // Query domain from DB
 func (d *DNS) Query(domain string) (answer []string) {
 	d.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("DNS"))
+		b := tx.Bucket(bktName)
 		v := b.Get([]byte(domain))
 		answer = strings.Split(string(v), "|")
 		return nil
 	})
+	if len(answer) == 0 {
+		return nil
+	}
 	if answer[0] == "" {
 		return nil
 	}
