@@ -17,7 +17,6 @@ import (
 	"github.com/wrfly/goproxy"
 
 	"github.com/wrfly/gus-proxy/prox"
-	"github.com/wrfly/gus-proxy/round"
 	"github.com/wrfly/gus-proxy/types"
 	"github.com/wrfly/gus-proxy/utils"
 )
@@ -53,9 +52,9 @@ func (c *Config) Validate() error {
 	}
 
 	switch c.Scheduler {
-	case round.ROUND_ROBIN:
-	case round.RANDOM:
-	case round.PING:
+	case types.ROUND_ROBIN:
+	case types.RANDOM:
+	case types.PING:
 	default:
 		return fmt.Errorf("Unknown scheduler: %s", c.Scheduler)
 	}
@@ -191,5 +190,11 @@ func (c *Config) UpdateProxies() {
 func (c *Config) ProxyHosts() []*types.ProxyHost {
 	c.m.RLock()
 	defer c.m.RUnlock()
-	return c.proxyHosts
+	ph := []*types.ProxyHost{}
+	for _, p := range c.proxyHosts {
+		if p.Available {
+			ph = append(ph, p)
+		}
+	}
+	return ph
 }

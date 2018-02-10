@@ -8,20 +8,15 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/wrfly/goproxy"
+	"github.com/wrfly/gus-proxy/config"
 	"github.com/wrfly/gus-proxy/db"
 	"github.com/wrfly/gus-proxy/types"
 	"github.com/wrfly/gus-proxy/utils"
 )
 
-const (
-	ROUND_ROBIN = "round-robin"
-	RANDOM      = "random"
-	PING        = "ping"
-)
-
 // Proxy main structure
 type Proxy struct {
-	ProxyHosts []*types.ProxyHost
+	proxyHosts func() []*types.ProxyHost
 	Scheduler  string // round-robin/random/ping
 	ua         string
 	dnsDB      *db.DNS
@@ -56,7 +51,8 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (p *Proxy) SelectProxy() (rProxy *types.ProxyHost) {
 	// make sure that we can select one at least
 	proxyavailable := false
-	for _, p := range p.ProxyHosts {
+	ph := p.proxyHosts()
+	for _, p := range ph {
 		if p.Available {
 			proxyavailable = true
 			break
@@ -68,9 +64,9 @@ func (p *Proxy) SelectProxy() (rProxy *types.ProxyHost) {
 
 ReSelect:
 	switch p.Scheduler {
-	case ROUND_ROBIN:
+	case types.ROUND_ROBIN:
 		rProxy = p.roundRobin()
-	case RANDOM:
+	case types.RANDOM:
 		rProxy = p.randomProxy()
 	default:
 		rProxy = p.roundRobin()
@@ -83,23 +79,19 @@ ReSelect:
 }
 
 func (p *Proxy) roundRobin() *types.ProxyHost {
-	if p.next == len(p.ProxyHosts) {
+	ph := p.proxyHosts()
+	if p.next == len(ph) {
 		p.next = 0
 	}
 	use := p.next
-	rProxy := p.ProxyHosts[use]
+	rProxy := ph[use]
 	p.next++
 
 	return rProxy
 }
 
 func (p *Proxy) randomProxy() *types.ProxyHost {
-	availableProxy := []*types.ProxyHost{}
-	for _, p := range p.ProxyHosts {
-		if p.Available {
-			availableProxy = append(availableProxy, p)
-		}
-	}
+	availableProxy := p.proxyHosts()
 
 	source := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(source)
@@ -110,12 +102,7 @@ func (p *Proxy) randomProxy() *types.ProxyHost {
 }
 
 func (p *Proxy) pingProxy() *types.ProxyHost {
-	availableProxy := []*types.ProxyHost{}
-	for _, p := range p.ProxyHosts {
-		if p.Available {
-			availableProxy = append(availableProxy, p)
-		}
-	}
+	availableProxy := p.proxyHosts()
 
 	sort.Slice(availableProxy, func(i, j int) bool {
 		return availableProxy[i].Ping < availableProxy[j].Ping
@@ -137,17 +124,17 @@ func (p *Proxy) pingProxy() *types.ProxyHost {
 }
 
 // New round proxy servers
-func New(proxyHosts []*types.ProxyHost, DNSdb *db.DNS, defaultUA string) *Proxy {
+func New(conf *config.Config, DNSdb *db.DNS) *Proxy {
 	logrus.Debugf("init proxy")
 	if DNSdb == nil {
 		logrus.Fatal("DNS DB is nil")
 	}
-	if len(proxyHosts) == 0 {
+	if len(conf.ProxyHosts()) == 0 {
 		logrus.Fatal("No available proxy to use")
 	}
 	return &Proxy{
-		ProxyHosts: proxyHosts,
+		proxyHosts: conf.ProxyHosts,
 		dnsDB:      DNSdb,
-		ua:         defaultUA,
+		ua:         conf.UA,
 	}
 }

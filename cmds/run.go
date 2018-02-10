@@ -8,6 +8,8 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"runtime/debug"
+	"sync"
 	"syscall"
 	"time"
 
@@ -92,10 +94,13 @@ func runGus(conf *config.Config) error {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	var wg sync.WaitGroup
 
 	// update proxy status
 	upChan := make(chan interface{})
 	go func() {
+		wg.Add(1)
+		defer wg.Done()
 		logrus.Info("Updating proxyies...")
 		conf.UpdateProxies()
 		upChan <- true
@@ -114,8 +119,10 @@ func runGus(conf *config.Config) error {
 
 	// handle signals
 	logrus.Debug("handle sigs")
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	sigStop := make(chan os.Signal)
+	signal.Notify(sigStop, syscall.SIGINT, syscall.SIGTERM)
+	sigKill := make(chan os.Signal)
+	signal.Notify(sigKill, os.Kill)
 
 	// init db
 	logrus.Debug("init dns db")
@@ -126,6 +133,8 @@ func runGus(conf *config.Config) error {
 	defer DNSdb.Close()
 
 	go func() {
+		// wg.Add(1)
+		// defer wg.Done()
 		if !conf.Debug {
 			return
 		}
@@ -135,19 +144,28 @@ func runGus(conf *config.Config) error {
 	}()
 
 	go func() {
+		// wg.Add(1)
+		// defer wg.Done()
 		logrus.Debugf("bind port [%s] and run", conf.ListenPort)
 		l, err := net.Listen("tcp4", conf.ListenPort)
 		if err != nil {
 			logrus.Fatalf("Bind port error: %s", err)
 		}
 
-		h := round.New(conf.ProxyHosts(), DNSdb, conf.UA)
+		handler := round.New(conf, DNSdb)
 		logrus.Info("Gus is running...")
-		logrus.Fatal(http.Serve(l, h))
+		logrus.Fatal(http.Serve(l, handler))
 	}()
 
-	<-sigs
-	cancel()
+	select {
+	case <-sigStop:
+		logrus.Info("About to stop")
+		cancel()
+		wg.Wait()
+	case <-sigKill:
+		cancel()
+		debug.FreeOSMemory()
+	}
 
 	logrus.Info("Gus stopped")
 	return nil
