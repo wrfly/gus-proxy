@@ -68,7 +68,7 @@ func Run() *cli.Command {
 			Name:        "update",
 			Value:       10,
 			Usage:       "Proxies update interval(second)",
-			Destination: &conf.ProxyUpdate,
+			Destination: &conf.ProxyUpdateInterval,
 		},
 	}
 
@@ -106,7 +106,7 @@ func runGus(conf *config.Config) error {
 		upChan <- true
 		close(upChan)
 
-		tk := time.NewTicker(time.Second * time.Duration(conf.ProxyUpdate))
+		tk := time.NewTicker(time.Second * time.Duration(conf.ProxyUpdateInterval))
 		defer tk.Stop()
 		for ctx.Err() == nil {
 			select {
@@ -133,8 +133,6 @@ func runGus(conf *config.Config) error {
 	defer DNSdb.Close()
 
 	go func() {
-		// wg.Add(1)
-		// defer wg.Done()
 		if !conf.Debug {
 			return
 		}
@@ -143,15 +141,14 @@ func runGus(conf *config.Config) error {
 		logrus.Fatal(http.ListenAndServe(addr, nil))
 	}()
 
+	logrus.Debugf("bind port [%s] and run", conf.ListenPort)
+	l, err := net.Listen("tcp4", conf.ListenPort)
+	if err != nil {
+		logrus.Fatalf("Bind port error: %s", err)
+	}
 	go func() {
-		// wg.Add(1)
-		// defer wg.Done()
-		logrus.Debugf("bind port [%s] and run", conf.ListenPort)
-		l, err := net.Listen("tcp4", conf.ListenPort)
-		if err != nil {
-			logrus.Fatalf("Bind port error: %s", err)
-		}
-
+		wg.Add(1)
+		defer wg.Done()
 		handler := round.New(conf, DNSdb)
 		logrus.Info("Gus is running...")
 		logrus.Fatal(http.Serve(l, handler))
@@ -160,9 +157,22 @@ func runGus(conf *config.Config) error {
 	select {
 	case <-sigStop:
 		logrus.Info("About to stop")
+		l.Close()
 		cancel()
-		wg.Wait()
+		select {
+		case <-sigStop:
+			logrus.Warn("Force quit!")
+			debug.FreeOSMemory()
+		case <-func() chan bool {
+			wg.Wait()
+			bc := make(chan bool, 1)
+			bc <- true
+			return bc
+		}():
+			logrus.Info("Quit")
+		}
 	case <-sigKill:
+		l.Close()
 		cancel()
 		debug.FreeOSMemory()
 	}

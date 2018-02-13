@@ -9,7 +9,7 @@ func TestLoadHostFile(t *testing.T) {
 	c := Config{
 		ProxyFilePath: "../proxyhosts.txt",
 	}
-	hosts, err := c.LoadHosts()
+	hosts, err := c.loadHosts()
 	if err != nil {
 		t.Error(err)
 	}

@@ -23,16 +23,19 @@ import (
 
 // Config ...
 type Config struct {
-	Debug              bool
-	ProxyFilePath      string
-	ProxyFilePathIsURL bool
-	Scheduler          string
-	ListenPort         string
-	DebugPort          string
-	UA                 string
-	proxyHosts         []*types.ProxyHost
-	ProxyUpdate        int
-	m                  sync.RWMutex
+	Debug               bool
+	ProxyFilePath       string
+	Scheduler           string
+	ListenPort          string
+	DebugPort           string
+	UA                  string
+	ProxyUpdateInterval int
+
+	proxyFilePathIsURL  bool
+	proxyHosts          []*types.ProxyHost
+	availableProxyHosts []*types.ProxyHost
+
+	m sync.RWMutex
 }
 
 // Validate the config
@@ -48,7 +51,7 @@ func (c *Config) Validate() error {
 		if resp.StatusCode != http.StatusOK {
 			return fmt.Errorf("Hostfile [%s] not exist", c.ProxyFilePath)
 		}
-		c.ProxyFilePathIsURL = true
+		c.proxyFilePathIsURL = true
 	}
 
 	switch c.Scheduler {
@@ -72,11 +75,12 @@ func (c *Config) Validate() error {
 }
 
 // LoadHosts returns the proxy hosts
-func (c *Config) LoadHosts() error {
+func (c *Config) loadHosts() error {
 	logrus.Debug("load proxy hosts")
-	proxyHosts := []*types.ProxyHost{}
 	var proxyfile io.ReadCloser
-	if c.ProxyFilePathIsURL {
+	proxyHosts := []*types.ProxyHost{}
+
+	if c.proxyFilePathIsURL {
 		resp, err := http.DefaultClient.Get(c.ProxyFilePath)
 		if err != nil {
 			return err
@@ -125,7 +129,7 @@ func (c *Config) LoadHosts() error {
 	opts := cmp.Options{
 		// ignore type(http, socks5...)
 		cmpopts.IgnoreFields(types.ProxyHost{}, "Type"),
-		// ignore ping value, avaliable and the *goproxy
+		// ignore ping value, available and the *goproxy
 		cmpopts.IgnoreTypes(types.ProxyHost{}.Ping, true, &goproxy.ProxyHttpServer{}),
 	}
 	if !cmp.Equal(proxyHosts, c.proxyHosts, opts) {
@@ -134,9 +138,7 @@ func (c *Config) LoadHosts() error {
 		if err != nil {
 			logrus.Fatalf("Create proxyies error: %s", err)
 		}
-		c.m.Lock()
 		c.proxyHosts = newHosts
-		c.m.Unlock()
 	}
 
 	return nil
@@ -145,15 +147,15 @@ func (c *Config) LoadHosts() error {
 // UpdateProxies update proxy's attr
 func (c *Config) UpdateProxies() {
 	logrus.Debugf("loading hosts...")
-	err := c.LoadHosts()
+	err := c.loadHosts()
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
 	var wg sync.WaitGroup
 	availableProxy := struct {
-		Num  int
-		Lock sync.Mutex
+		n int
+		m sync.Mutex
 	}{}
 
 	for _, proxy := range c.proxyHosts {
@@ -162,9 +164,9 @@ func (c *Config) UpdateProxies() {
 			defer wg.Done()
 			proxy.Available = false
 			if utils.CheckProxyAvailable(proxy) == nil {
-				availableProxy.Lock.Lock()
-				availableProxy.Num++
-				availableProxy.Lock.Unlock()
+				availableProxy.m.Lock()
+				availableProxy.n++
+				availableProxy.m.Unlock()
 				proxy.Available = true
 			}
 			proxy.Ping = utils.GetProxyPing(proxy)
@@ -174,7 +176,7 @@ func (c *Config) UpdateProxies() {
 	}
 	wg.Wait()
 
-	availableNum := availableProxy.Num
+	availableNum := availableProxy.n
 	totalNum := len(c.proxyHosts)
 	switch { // mast in this order (small to big)
 	case availableNum*4 <= totalNum:
@@ -185,16 +187,21 @@ func (c *Config) UpdateProxies() {
 		logrus.Warnf("Half of the proxys was down, available: [%d] total: [%d], I'm worried...",
 			availableNum, totalNum)
 	}
+
+	c.m.Lock()
+	c.availableProxyHosts = nil
+	for _, ph := range c.proxyHosts {
+		if ph.Available {
+			c.availableProxyHosts = append(c.availableProxyHosts, ph)
+		}
+	}
+	logrus.Debugf("append %d available proxies", len(c.availableProxyHosts))
+	c.m.Unlock()
+
 }
 
 func (c *Config) ProxyHosts() []*types.ProxyHost {
 	c.m.RLock()
 	defer c.m.RUnlock()
-	ph := []*types.ProxyHost{}
-	for _, p := range c.proxyHosts {
-		if p.Available {
-			ph = append(ph, p)
-		}
-	}
-	return ph
+	return c.availableProxyHosts
 }

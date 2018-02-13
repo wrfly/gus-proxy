@@ -17,7 +17,7 @@ import (
 // Proxy main structure
 type Proxy struct {
 	proxyHosts func() []*types.ProxyHost
-	Scheduler  string // round-robin/random/ping
+	scheduler  string // round-robin/random/ping
 	ua         string
 	dnsDB      *db.DNS
 	next       int
@@ -63,7 +63,7 @@ func (p *Proxy) SelectProxy() (rProxy *types.ProxyHost) {
 	}
 
 ReSelect:
-	switch p.Scheduler {
+	switch p.scheduler {
 	case types.ROUND_ROBIN:
 		rProxy = p.roundRobin()
 	case types.RANDOM:
@@ -134,6 +134,7 @@ func New(conf *config.Config, DNSdb *db.DNS) *Proxy {
 	}
 	return &Proxy{
 		proxyHosts: conf.ProxyHosts,
+		scheduler:  conf.Scheduler,
 		dnsDB:      DNSdb,
 		ua:         conf.UA,
 	}
