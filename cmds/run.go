@@ -142,7 +142,7 @@ func runGus(conf *config.Config) error {
 	}()
 
 	logrus.Debugf("bind port [%s] and run", conf.ListenPort)
-	l, err := net.Listen("tcp4", conf.ListenPort)
+	l, err := net.Listen("tcp4", fmt.Sprintf("0.0.0.0:%s", conf.ListenPort))
 	if err != nil {
 		logrus.Fatalf("Bind port error: %s", err)
 	}

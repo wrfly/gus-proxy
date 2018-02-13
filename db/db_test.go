@@ -15,14 +15,18 @@ func TestDB(t *testing.T) {
 	err = dnsDB.SetDNS("kfd.me", []string{"8.8.8.8", "1.1.1.2"})
 	assert.NoError(t, err)
 
-	a := dnsDB.Query("kfd.me")
-	for _, ip := range a {
-		fmt.Println(ip)
-	}
+	t.Run("query no error", func(t *testing.T) {
+		a := dnsDB.Query("kfd.me")
+		for _, ip := range a {
+			fmt.Println(ip)
+		}
+	})
 
-	b := dnsDB.Query("kfd.mee")
-	for _, ip := range b {
-		fmt.Println(ip)
-	}
-	fmt.Println("done")
+	t.Run("query not found", func(t *testing.T) {
+		b := dnsDB.Query("kfd.mee")
+		if len(b) != 0 {
+			t.Error("wtf?")
+		}
+	})
+
 }

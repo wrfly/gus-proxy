@@ -45,11 +45,11 @@ func (c *Config) Validate() error {
 	if err != nil && os.IsNotExist(err) {
 		resp, err := http.DefaultClient.Get(c.ProxyFilePath)
 		if err != nil {
-			return err
+			return fmt.Errorf("get host %s error: %s", c.ProxyFilePath, err)
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("Hostfile [%s] not exist", c.ProxyFilePath)
+			return fmt.Errorf("Hostfile [%s] not found", c.ProxyFilePath)
 		}
 		c.proxyFilePathIsURL = true
 	}
@@ -63,12 +63,11 @@ func (c *Config) Validate() error {
 	}
 
 	// listen port
-	c.ListenPort = fmt.Sprintf(":%s", c.ListenPort)
-	l, err := net.Listen("tcp4", c.ListenPort)
+	l, err := net.Listen("tcp4", fmt.Sprintf("0.0.0.0:%s", c.ListenPort))
 	if err != nil {
-		return fmt.Errorf("Can not bind this port: %s", err)
+		return fmt.Errorf("Bind port error: %s", err)
 	}
-	defer l.Close()
+	l.Close()
 
 	logrus.Debug("validate ok")
 	return nil
@@ -83,7 +82,7 @@ func (c *Config) loadHosts() error {
 	if c.proxyFilePathIsURL {
 		resp, err := http.DefaultClient.Get(c.ProxyFilePath)
 		if err != nil {
-			return err
+			return fmt.Errorf("get host %s error: %s", c.ProxyFilePath, err)
 		}
 		proxyfile = resp.Body
 	} else {
@@ -99,7 +98,7 @@ func (c *Config) loadHosts() error {
 			if err == io.EOF {
 				break
 			}
-			return err
+			return fmt.Errorf("read line error: %s", err)
 		}
 
 		if s[0] == '#' {
@@ -146,10 +145,9 @@ func (c *Config) loadHosts() error {
 
 // UpdateProxies update proxy's attr
 func (c *Config) UpdateProxies() {
-	logrus.Debugf("loading hosts...")
 	err := c.loadHosts()
 	if err != nil {
-		logrus.Fatal(err)
+		logrus.Fatalf("load proxy error: %s", err)
 	}
 
 	var wg sync.WaitGroup
