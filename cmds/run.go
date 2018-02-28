@@ -159,16 +159,18 @@ func runGus(conf *config.Config) error {
 		logrus.Info("About to stop")
 		l.Close()
 		cancel()
+		quit := make(chan struct{})
+		go func() {
+			wg.Wait()
+			quit <- struct{}{}
+		}()
+		defer close(quit)
+
 		select {
 		case <-sigStop:
 			logrus.Warn("Force quit!")
 			debug.FreeOSMemory()
-		case <-func() chan bool {
-			wg.Wait()
-			bc := make(chan bool, 1)
-			bc <- true
-			return bc
-		}():
+		case <-quit:
 			logrus.Info("Quit")
 		}
 	case <-sigKill:
