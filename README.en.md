@@ -3,6 +3,9 @@
 "gus - the heavy-duty drug trafficker in *Breaking Bad*"
 
 [![Build Status](https://travis-ci.org/wrfly/gus-proxy.svg?branch=master)](https://travis-ci.org/wrfly/gus-proxy)
+[![Go Report Card](https://goreportcard.com/badge/github.com/wrfly/gus-proxy)](https://goreportcard.com/report/github.com/wrfly/gus-proxy)
+
+[README.Chinese](README.md)
 
 ---
 

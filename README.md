@@ -3,6 +3,7 @@
 "gus - 绝命毒师里的大毒枭"
 
 [![Build Status](https://travis-ci.org/wrfly/gus-proxy.svg?branch=master)](https://travis-ci.org/wrfly/gus-proxy)
+[![Go Report Card](https://goreportcard.com/badge/github.com/wrfly/gus-proxy)](https://goreportcard.com/report/github.com/wrfly/gus-proxy)
 
 [README.English](README.en.md)
 
