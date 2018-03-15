@@ -198,6 +198,7 @@ func (c *Config) UpdateProxies() {
 
 }
 
+// ProxyHosts returns all the proxy hosts get from URL or a static file
 func (c *Config) ProxyHosts() []*types.ProxyHost {
 	c.m.RLock()
 	defer c.m.RUnlock()

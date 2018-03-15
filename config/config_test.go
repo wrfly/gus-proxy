@@ -25,11 +25,11 @@ func TestConfig(t *testing.T) {
 	})
 
 	t.Run("mock proxy not found error", func(t *testing.T) {
-		mc := c
-		mc.ProxyFilePath = "https://kfd.me/404"
+		ori := c.ProxyFilePath
+		c.ProxyFilePath = "https://kfd.me/404"
 		err := mc.Validate()
-
 		assert.Error(t, err, "not found")
+		c.ProxyFilePath = ori
 	})
 
 	t.Run("load hostfile", func(t *testing.T) {

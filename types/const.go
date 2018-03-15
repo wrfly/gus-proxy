@@ -1,7 +1,10 @@
 package types
 
 const (
+	// round robin
 	ROUND_ROBIN = "round-robin"
-	RANDOM      = "random"
-	PING        = "ping"
+	// randomly chose one
+	RANDOM = "random"
+	// less ping is better
+	PING = "ping"
 )

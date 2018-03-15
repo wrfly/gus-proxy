@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	// for go tool pprof ...
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
@@ -21,6 +22,7 @@ import (
 	"github.com/wrfly/gus-proxy/round"
 )
 
+// Run gus-proxy
 func Run() *cli.Command {
 	conf := &config.Config{}
 

@@ -18,7 +18,7 @@ type DNS struct {
 	db *bolt.DB
 }
 
-// Open a database file,create one if not exist
+// New database file, create one if not exist
 func New() (*DNS, error) {
 	dbFileName := path.Join(os.TempDir(), "gus-dns.db")
 	if _, err := os.Stat(dbFileName); os.IsNotExist(err) {
