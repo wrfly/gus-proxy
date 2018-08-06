@@ -66,7 +66,7 @@ func Run() *cli.Command {
 		},
 		&cli.IntFlag{
 			Name:        "update",
-			Value:       10,
+			Value:       30,
 			Usage:       "Proxies update interval(second)",
 			Destination: &conf.ProxyUpdateInterval,
 		},
