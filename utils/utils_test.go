@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"github.com/wrfly/gus-proxy/db"
 	"github.com/wrfly/gus-proxy/types"
 )

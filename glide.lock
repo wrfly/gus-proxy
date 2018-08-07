@@ -1,5 +1,5 @@
-hash: 710d29b0fe932a21f6b0089d4cfeec38c07854ae8c42e12d6bbc8857d61a89c9
-updated: 2018-08-07T16:56:25.53249269+08:00
+hash: 2b03abeb0ddd0360942838659b771fa59248af0bbdcde6420db5d810a58ecc14
+updated: 2018-08-07T18:15:23.265943677+08:00
 imports:
 - name: github.com/boltdb/bolt
   version: 2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8
@@ -13,25 +13,16 @@ imports:
   - cmp/internal/diff
   - cmp/internal/function
   - cmp/internal/value
-- name: github.com/miekg/dns
-  version: 5a2b9fab83ff0f8bfc99684bd5f43a37abe560f1
 - name: github.com/sirupsen/logrus
   version: c155da19408a8799da419ed3eeb0cb5db0ad5dbc
   repo: https://github.com/sirupsen/logrus.git
 - name: golang.org/x/crypto
   version: 2b6c08872f4b66da917bb4ce98df4f0307330f78
   subpackages:
-  - ed25519
-  - ed25519/internal/edwards25519
   - ssh/terminal
 - name: golang.org/x/net
   version: 1c05540f6879653db88113bc4a2b70aec4bd491f
   subpackages:
-  - bpf
-  - internal/iana
-  - internal/socket
-  - ipv4
-  - ipv6
   - proxy
 - name: golang.org/x/sys
   version: 95c6576299259db960f6c5b9b69ea52422860fce

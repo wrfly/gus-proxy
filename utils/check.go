@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+
 	"github.com/wrfly/gus-proxy/prox"
 	"github.com/wrfly/gus-proxy/types"
 )

@@ -7,8 +7,6 @@ import:
   subpackages:
   - cmp
   - cmp/cmpopts
-- package: github.com/miekg/dns
-  version: ^1.0.8
 - package: github.com/sirupsen/logrus
   repo: https://github.com/sirupsen/logrus.git
 - package: github.com/elazarl/goproxy

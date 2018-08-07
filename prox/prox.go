@@ -7,8 +7,9 @@ import (
 
 	"github.com/elazarl/goproxy"
 	"github.com/sirupsen/logrus"
-	"github.com/wrfly/gus-proxy/types"
 	"golang.org/x/net/proxy"
+
+	"github.com/wrfly/gus-proxy/types"
 )
 
 func proxyHTTP(httpAddr string) (*goproxy.ProxyHttpServer, error) {

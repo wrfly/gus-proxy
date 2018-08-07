@@ -5,10 +5,9 @@ import (
 	"math/rand"
 	"net"
 	"strings"
-	"time"
 
-	"github.com/miekg/dns"
 	"github.com/sirupsen/logrus"
+
 	"github.com/wrfly/gus-proxy/db"
 )
 
@@ -26,7 +25,7 @@ func SelectIP(host string, dnsDB *db.DNS) string {
 	logrus.Debugf("Query %s IP: %v", domain, ips)
 	// not found in db
 	if len(ips) == 0 {
-		digIPs, err := dig(domain) // shadow value
+		digIPs, err := lookupHost(domain) // shadow value
 		if err != nil {
 			logrus.Errorf("Dig Error: %s", err)
 			return "127.0.0.1"
@@ -39,40 +38,24 @@ func SelectIP(host string, dnsDB *db.DNS) string {
 		ips = digIPs
 	}
 
-	i := rand.Int() % len(ips)
-	ip := ips[i]
-	ip = fmt.Sprintf("%s:%s", ip, port)
-
-	return ip
+	ip := ips[rand.Int()%len(ips)]
+	return fmt.Sprintf("%s:%s", ip, port)
 }
 
-func dig(domain string) (IPs []string, err error) {
-	config, _ := dns.ClientConfigFromFile("/etc/resolv.conf")
-	c := new(dns.Client)
-	c.DialTimeout = time.Duration(2 * time.Second)
-	c.ReadTimeout = time.Duration(2 * time.Second)
-
-	m := new(dns.Msg)
-	m.SetQuestion(dns.Fqdn(domain), dns.TypeA)
-	m.RecursionDesired = true
-
-	r, _, err := c.Exchange(m, net.JoinHostPort(config.Servers[0], config.Port))
-	if r == nil || err != nil {
-		return nil, fmt.Errorf("answer is nil; err: %s", err)
+func lookupHost(domain string) (IPs []string, err error) {
+	ips, err := net.LookupIP(domain)
+	if err != nil {
+		return nil, err
 	}
 
-	if r.Rcode != dns.RcodeSuccess {
-		return nil, fmt.Errorf("dig domain [%s] failed", domain)
+	ipv4 := make([]string, 0, len(ips))
+	for _, ip := range ips {
+		if ip.To4() == nil { // not an ipv4 address
+			continue
+		}
+		ipv4 = append(ipv4, ip.String())
 	}
 
-	for _, a := range r.Answer {
-		ip := getIPOnly(a.String())
-		IPs = append(IPs, ip)
-	}
-	return IPs, nil
-}
+	return ipv4[:len(ipv4)], nil
 
-func getIPOnly(answer string) (ip string) {
-	tabPos := strings.LastIndex(answer, "\t")
-	return string(answer[tabPos+1:])
 }

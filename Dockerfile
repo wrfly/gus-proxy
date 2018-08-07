@@ -8,6 +8,7 @@ RUN cd /go/src/github.com/wrfly/gus-proxy && \
     mv * /go
 
 FROM alpine
+COPY --from=build /etc/nsswitch.conf /etc/nsswitch.conf 
 COPY --from=build /go/gus-proxy /usr/local/bin
 EXPOSE 8080
 CMD [ "gus-proxy", "help" ]
