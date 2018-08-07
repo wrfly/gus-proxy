@@ -16,6 +16,9 @@ import (
 func CheckProxyAvailable(host *types.ProxyHost) error {
 	logrus.Debugf("CheckProxyAvailable [%s]", host.Addr)
 	proxyURL, err := url.Parse(host.Addr)
+	if proxyURL.Scheme == "direct" {
+		return nil
+	}
 	if err != nil {
 		logrus.Debugf("Proxy [%s] is not available, error: %s", host.Addr, err)
 		return err
@@ -44,23 +47,11 @@ func CheckProxyAvailable(host *types.ProxyHost) error {
 		Timeout:   3 * time.Second,
 	}
 
-	reqURL := &url.URL{
-		Path:   "/getip.aspx",
-		Scheme: "http",
-		Host:   "112.5.254.80",
-	}
-	req := &http.Request{
-		Method: "GET",
-		URL:    reqURL,
-		Host:   "ip.chinaz.com",
-	}
-
-	resp, err := clnt.Do(req)
+	_, err = clnt.Get("https://www.baidu.com/home/msg/data/personalcontent")
 	if err != nil {
 		logrus.Debugf("Proxy [%s] is not available, error: %s", host.Addr, err)
 		return err
 	}
-	defer resp.Body.Close()
 
 	return nil
 }

@@ -37,6 +37,10 @@ func proxySocks5(socks5Addr string, auth proxy.Auth) (*goproxy.ProxyHttpServer, 
 	return prox, nil
 }
 
+func proxyDirect() *goproxy.ProxyHttpServer {
+	return goproxy.NewProxyHttpServer()
+}
+
 // New returns proxies
 func New(oHosts []*types.ProxyHost) ([]*types.ProxyHost, error) {
 	var err error
@@ -46,6 +50,8 @@ func New(oHosts []*types.ProxyHost) ([]*types.ProxyHost, error) {
 		host.Type = scheme
 		var p *goproxy.ProxyHttpServer
 		switch scheme {
+		case "direct":
+			p = proxyDirect()
 		case "http":
 			p, err = proxyHTTP(host.Addr)
 		case "socks5":

@@ -1,10 +1,10 @@
 package prox
 
 import (
+	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -17,8 +17,20 @@ func TestHttpProxy(t *testing.T) {
 	p, err := proxyHTTP(addr)
 	assert.NoError(t, err)
 
-	go http.ListenAndServe("127.0.0.1:8080", p)
-	time.Sleep(10 * time.Second)
+	c := http.Client{Transport: p.Tr}
+	r, _ := http.NewRequest("GET", "http://ipinfo.io", nil)
+	r.Header.Set("User-Agent", "curl")
+	resp, err := c.Do(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	bs, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%s", bs)
 }
 
 func TestSocks5Proxy(t *testing.T) {
@@ -26,8 +38,40 @@ func TestSocks5Proxy(t *testing.T) {
 	p, err := proxySocks5(addr, proxy.Auth{})
 	assert.NoError(t, err)
 
-	go http.ListenAndServe("127.0.0.1:8080", p)
-	time.Sleep(10 * time.Second)
+	c := http.Client{Transport: p.Tr}
+	r, _ := http.NewRequest("GET", "http://ipinfo.io", nil)
+	r.Header.Set("User-Agent", "curl")
+	resp, err := c.Do(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	bs, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%s", bs)
+}
+
+func TestDirect(t *testing.T) {
+	p := proxyDirect()
+
+	c := http.Client{Transport: p.Tr}
+	r, _ := http.NewRequest("GET", "http://ipinfo.io", nil)
+	r.Header.Set("User-Agent", "curl")
+	resp, err := c.Do(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	bs, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%s", bs)
+
 }
 
 func TestNew(t *testing.T) {
@@ -37,11 +81,14 @@ func TestNew(t *testing.T) {
 	hosts := []*types.ProxyHost{
 		{Addr: "socks5://127.0.0.1:1080"},
 		{Addr: "https://127.0.0.1:1081"},
+		{Addr: "direct://0.0.0.0"},
 	}
 	proxs, err := New(hosts)
 	assert.NoError(t, err)
 	assert.NotNil(t, proxs)
-	t.Log(proxs)
+	for _, p := range proxs {
+		t.Logf("%+v\n", p)
+	}
 }
 
 func TestSplitURL(t *testing.T) {

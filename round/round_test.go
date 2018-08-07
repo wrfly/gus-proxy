@@ -72,14 +72,14 @@ func TestRoundProxy(t *testing.T) {
 			Transport: &http.Transport{
 				Proxy: http.ProxyURL(proxyURL),
 			},
-			Timeout: 3 * time.Second,
+			Timeout: 5 * time.Second,
 		}
 		var wg sync.WaitGroup
 		for i := 0; i < 6; i++ {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				resp, err := clnt.Get("https://ip.kfd.me")
+				resp, err := clnt.Get("http://ipinfo.io")
 				assert.NoError(t, err)
 				if resp == nil {
 					return

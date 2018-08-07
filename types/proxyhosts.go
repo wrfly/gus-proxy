@@ -7,7 +7,7 @@ import (
 
 // ProxyHost defines the proxy
 type ProxyHost struct {
-	Type      string  // http or socks5
+	Type      string  // http or socks5 or direct
 	Addr      string  // 127.0.0.1:1080
 	Ping      float32 // 66 ms
 	Available bool
