@@ -12,7 +12,10 @@
 ## Run
 
 ```bash
-sudo docker run --rm -ti -p 8080:8080 wrfly/gus-proxy
+sudo docker run --rm -ti --name gus-proxy \
+    -p 8080:8080 \
+    -v proxyhosts.txt:/proxyhosts.txt \
+    wrfly/gus-proxy
 ```
 
 ## Thoughts

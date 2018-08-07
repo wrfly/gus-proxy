@@ -12,9 +12,13 @@ CTIMEVAR = -X main.CommitID=$(COMMITID) \
 	-X main.BuildAt=$(BUILDAT)
 GO_LDFLAGS = -ldflags "-s -w $(CTIMEVAR)"
 
+GLIDE_URL := https://github.com/Masterminds/glide/releases/download/v0.13.1/glide-v0.13.1-linux-amd64.tar.gz
+
 .PHONY: prepare
 prepare:
-	glide i
+	wget $(GLIDE_URL) -O glide.tgz
+	tar xzf glide.tgz
+	linux-amd64/glide install
 
 .PHONY: bin
 bin:
@@ -57,7 +61,6 @@ image:
 .PHONY: push-image
 push-image:
 	docker push $(IMAGE)
-
 
 .PHONY: push-develop
 push-develop:
