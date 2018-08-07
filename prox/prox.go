@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/elazarl/goproxy"
 	"github.com/sirupsen/logrus"
-	"github.com/wrfly/goproxy"
 	"github.com/wrfly/gus-proxy/types"
 	"golang.org/x/net/proxy"
 )

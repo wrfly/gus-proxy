@@ -1,5 +1,18 @@
-gus-proxy
-vendor/*
-debug.test
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary, build with `go test -c`
+*.test
+
+# binaries
+bin/*
+
+# Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
+.glide/
+vendor/
+
+# local test
 proxyhosts_test.txt
-.vscode/*

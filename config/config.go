@@ -11,10 +11,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/elazarl/goproxy"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/sirupsen/logrus"
-	"github.com/wrfly/goproxy"
 
 	"github.com/wrfly/gus-proxy/prox"
 	"github.com/wrfly/gus-proxy/types"

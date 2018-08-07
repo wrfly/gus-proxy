@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/wrfly/gus-proxy/cmds"
@@ -9,15 +10,11 @@ import (
 
 func main() {
 	app := cli.App{
-		Name:    "gus-proxy",
-		Usage:   "An apple a day, keep the doctor away.",
-		Version: "0.4",
-		Authors: []*cli.Author{
-			&cli.Author{
-				Name:  "wrfly",
-				Email: "mr.wrfly@gmail.com",
-			},
-		},
+		Name:  "gus-proxy",
+		Usage: "An apple a day, keep the doctor away.",
+		Version: fmt.Sprintf("version: %s\tcommit: %s\tdate: %s",
+			Version, CommitID, BuildAt),
+		Authors: author,
 		Commands: []*cli.Command{
 			cmds.Run(),
 		},
