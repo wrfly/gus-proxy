@@ -1,4 +1,4 @@
-package prox
+package types
 
 import (
 	"fmt"
@@ -8,8 +8,6 @@ import (
 	"github.com/elazarl/goproxy"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/proxy"
-
-	"github.com/wrfly/gus-proxy/types"
 )
 
 func proxyHTTP(httpAddr string) (*goproxy.ProxyHttpServer, error) {
@@ -42,34 +40,27 @@ func proxyDirect() *goproxy.ProxyHttpServer {
 	return goproxy.NewProxyHttpServer()
 }
 
-// New returns proxies
-func New(oHosts []*types.ProxyHost) ([]*types.ProxyHost, error) {
-	var err error
-	for _, host := range oHosts {
-		auth, scheme, hostAndPort := splitURL(host.Addr)
-		host.Auth = auth
-		host.Type = scheme
-		var p *goproxy.ProxyHttpServer
-		switch scheme {
-		case "direct":
-			p = proxyDirect()
-		case "http":
-			p, err = proxyHTTP(host.Addr)
-		case "socks5":
-			p, err = proxySocks5(hostAndPort, auth)
-		case "https":
-		// TODO: add https proxy
-		default:
-			return nil, fmt.Errorf("[%s]: unknown protocol %s", host.Addr, scheme)
-		}
-		if err != nil || p == nil {
-			continue
-		}
+func initGoProxy(host *ProxyHost) error {
+	var (
+		err         error
+		hostAndPort string
+	)
 
-		host.GoProxy = p
+	host.Auth, host.Type, hostAndPort = splitURL(host.Addr)
+	switch host.Type {
+	case "direct":
+		host.GoProxy = proxyDirect()
+	case "http":
+		host.GoProxy, err = proxyHTTP(host.Addr)
+	case "socks5":
+		host.GoProxy, err = proxySocks5(hostAndPort, host.Auth)
+	case "https":
+	// TODO: add https proxy
+	default:
+		return fmt.Errorf("[%s]: unknown protocol %s", host.Addr, host.Type)
 	}
 
-	return oHosts, nil
+	return err
 }
 
 func splitURL(URL string) (auth proxy.Auth, scheme, host string) {

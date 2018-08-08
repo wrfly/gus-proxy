@@ -1,25 +1,17 @@
 package utils
 
 import (
-	"net/url"
 	"os/exec"
 	"strconv"
 	"strings"
-
-	// ping "github.com/sparrc/go-ping"
-	"github.com/sirupsen/logrus"
-	"github.com/wrfly/gus-proxy/types"
 )
 
-// GetProxyPing ping the proxy ip and returns the average rtt
-func GetProxyPing(host *types.ProxyHost) float32 {
-	URL, _ := url.Parse(host.Addr)
-	ip := strings.Split(URL.Host, ":")[0]
-	logrus.Debugf("GetProxyPing [%s]", ip)
-
+// Ping host and returns the average rtt
+func Ping(ip string) float32 {
 	cmd := exec.Command("ping", "-A", "-c", "3", "-w", "2", ip)
 	b, err := cmd.Output()
 	if err != nil {
+		println(err.Error())
 		return 9999
 	}
 

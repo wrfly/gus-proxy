@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/wrfly/gus-proxy/config"
 	"github.com/wrfly/gus-proxy/db"
-	"github.com/wrfly/gus-proxy/prox"
 	"github.com/wrfly/gus-proxy/types"
 )
 
@@ -30,10 +29,11 @@ func TestRoundProxy(t *testing.T) {
 				Available: ava,
 			},
 		}
+		for _, host := range hosts {
+			err := host.Init()
+			assert.NoError(t, err)
+		}
 
-		proxys, err := prox.New(hosts)
-		assert.NoError(t, err)
-		assert.NotNil(t, proxys)
 	}
 	t.Run("test new proxy", testNewProxy)
 

@@ -5,17 +5,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/wrfly/gus-proxy/db"
-	"github.com/wrfly/gus-proxy/types"
 )
 
 func TestPing(t *testing.T) {
-	host := &types.ProxyHost{
-		Addr: "http://8.8.8.8:1080",
-	}
-	fmt.Println(GetProxyPing(host))
+	t.Log(Ping("8.8.8.8"))
+	t.Log(Ping("1.1.1.1"))
+	t.Log(Ping("kfd.me"))
 }
 
 func Test(t *testing.T) {
@@ -34,15 +30,6 @@ rtt min/avg/max/mdev = 59.498/64.273/69.909/4.303 ms, ipg/ewma 200.829/63.797 ms
 
 	fmt.Println(s[1])
 
-}
-
-func TestCheckProxyAvailable(t *testing.T) {
-	host := types.ProxyHost{
-		// Addr: "http://61.130.97.212:8099", // www.baidu.com
-		Addr: "http://119.75.216.20:80", // www.baidu.com
-	}
-	err := CheckProxyAvailable(&host)
-	assert.Error(t, err)
 }
 
 func TestDig(t *testing.T) {

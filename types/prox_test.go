@@ -1,4 +1,4 @@
-package prox
+package types
 
 import (
 	"io/ioutil"
@@ -8,7 +8,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"github.com/wrfly/gus-proxy/types"
 	"golang.org/x/net/proxy"
 )
 
@@ -74,20 +73,19 @@ func TestDirect(t *testing.T) {
 
 }
 
-func TestNew(t *testing.T) {
+func TestInitProxy(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
 	logrus.SetOutput(os.Stdout)
 
-	hosts := []*types.ProxyHost{
+	hosts := []*ProxyHost{
 		{Addr: "socks5://127.0.0.1:1080"},
 		{Addr: "https://127.0.0.1:1081"},
 		{Addr: "direct://0.0.0.0"},
 	}
-	proxs, err := New(hosts)
-	assert.NoError(t, err)
-	assert.NotNil(t, proxs)
-	for _, p := range proxs {
-		t.Logf("%+v\n", p)
+	for _, host := range hosts {
+		err := host.Init()
+		assert.NoError(t, err)
+		t.Logf("%s: %v\n", host.Addr, host.Available)
 	}
 }
 

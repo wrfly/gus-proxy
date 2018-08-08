@@ -16,9 +16,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/sirupsen/logrus"
 
-	"github.com/wrfly/gus-proxy/prox"
 	"github.com/wrfly/gus-proxy/types"
-	"github.com/wrfly/gus-proxy/utils"
 )
 
 // Config ...
@@ -133,11 +131,13 @@ func (c *Config) loadHosts() error {
 	}
 	if !cmp.Equal(proxyHosts, c.proxyHosts, opts) {
 		logrus.Info("Creating new proxies...")
-		newHosts, err := prox.New(proxyHosts)
-		if err != nil {
-			logrus.Fatalf("Create proxyies error: %s", err)
+		for _, host := range proxyHosts {
+			if err := host.Init(); err != nil {
+				logrus.Errorf("Create proxyies error: %s", err)
+				continue
+			}
 		}
-		c.proxyHosts = newHosts
+		c.proxyHosts = proxyHosts
 	}
 
 	return nil
@@ -161,13 +161,12 @@ func (c *Config) UpdateProxies() {
 		go func(proxy *types.ProxyHost) {
 			defer wg.Done()
 			proxy.Available = false
-			if utils.CheckProxyAvailable(proxy) == nil {
+			if proxy.CheckAvaliable() == nil {
 				availableProxy.m.Lock()
 				availableProxy.n++
 				availableProxy.m.Unlock()
 				proxy.Available = true
 			}
-			proxy.Ping = utils.GetProxyPing(proxy)
 			logrus.Debugf("Proxy: %s, Available: %v, Ping: %f",
 				proxy.Addr, proxy.Available, proxy.Ping)
 		}(proxy)
@@ -178,11 +177,11 @@ func (c *Config) UpdateProxies() {
 	totalNum := len(c.proxyHosts)
 	switch { // mast in this order (small to big)
 	case availableNum*4 <= totalNum:
-		logrus.Errorf("Not enough available proxys, available: [%d] total: [%d], I'm angry!",
+		logrus.Errorf("Not enough available proxys, available: [%d] total: [%d]",
 			availableNum, totalNum)
 		// some alert
 	case availableNum*2 <= totalNum:
-		logrus.Warnf("Half of the proxys was down, available: [%d] total: [%d], I'm worried...",
+		logrus.Warnf("Half of the proxys was down, available: [%d] total: [%d]",
 			availableNum, totalNum)
 	}
 
