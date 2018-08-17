@@ -1,4 +1,4 @@
-package round
+package gus
 
 import (
 	"math/rand"
@@ -15,8 +15,10 @@ import (
 	"github.com/wrfly/gus-proxy/utils"
 )
 
-// Proxy main structure
-type Proxy struct {
+type GusProxy http.Handler
+
+// Gustavo main structure
+type Gustavo struct {
 	proxyHosts func() []*types.ProxyHost
 	scheduler  string // round-robin/random/ping
 	ua         string
@@ -24,16 +26,16 @@ type Proxy struct {
 	next       int
 }
 
-func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (gs *Gustavo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	logrus.Debugf("Request: %v", r.URL)
 	defer r.Body.Close()
 	// rebuild request
-	r.URL.Host = utils.SelectIP(r.Host, p.dnsDB)
-	if p.ua != "" {
+	r.URL.Host = utils.SelectIP(r.Host, gs.dnsDB)
+	if gs.ua != "" {
 		r.Header.Set("User-Agent", utils.RandomUA())
 	}
 
-	selectedProxy := p.SelectProxy()
+	selectedProxy := gs.SelectProxy()
 	if selectedProxy != nil {
 		logrus.Debugf("Use proxy: %s", selectedProxy.Addr)
 		selectedProxy.GoProxy.ServeHTTP(w, r)
@@ -51,10 +53,10 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // SelectProxy returns a proxy depends on your scheduler
-func (p *Proxy) SelectProxy() (rProxy *types.ProxyHost) {
+func (gs *Gustavo) SelectProxy() (rProxy *types.ProxyHost) {
 	// make sure that we can select one at least
 	proxyavailable := false
-	ph := p.proxyHosts()
+	ph := gs.proxyHosts()
 	for _, p := range ph {
 		if p.Available {
 			proxyavailable = true
@@ -66,13 +68,13 @@ func (p *Proxy) SelectProxy() (rProxy *types.ProxyHost) {
 	}
 
 ReSelect:
-	switch p.scheduler {
+	switch gs.scheduler {
 	case types.ROUND_ROBIN:
-		rProxy = p.roundRobin()
+		rProxy = gs.roundRobin()
 	case types.RANDOM:
-		rProxy = p.randomProxy()
+		rProxy = gs.randomProxy()
 	default:
-		rProxy = p.roundRobin()
+		rProxy = gs.roundRobin()
 	}
 	if !rProxy.Available {
 		goto ReSelect
@@ -81,20 +83,20 @@ ReSelect:
 	return rProxy
 }
 
-func (p *Proxy) roundRobin() *types.ProxyHost {
-	ph := p.proxyHosts()
-	if p.next == len(ph) {
-		p.next = 0
+func (gs *Gustavo) roundRobin() *types.ProxyHost {
+	ph := gs.proxyHosts()
+	if gs.next == len(ph) {
+		gs.next = 0
 	}
-	use := p.next
+	use := gs.next
 	rProxy := ph[use]
-	p.next++
+	gs.next++
 
 	return rProxy
 }
 
-func (p *Proxy) randomProxy() *types.ProxyHost {
-	availableProxy := p.proxyHosts()
+func (gs *Gustavo) randomProxy() *types.ProxyHost {
+	availableProxy := gs.proxyHosts()
 
 	source := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(source)
@@ -104,8 +106,8 @@ func (p *Proxy) randomProxy() *types.ProxyHost {
 	return rProxy
 }
 
-func (p *Proxy) pingProxy() *types.ProxyHost {
-	availableProxy := p.proxyHosts()
+func (gs *Gustavo) pingProxy() *types.ProxyHost {
+	availableProxy := gs.proxyHosts()
 
 	sort.Slice(availableProxy, func(i, j int) bool {
 		return availableProxy[i].Ping < availableProxy[j].Ping
@@ -127,7 +129,7 @@ func (p *Proxy) pingProxy() *types.ProxyHost {
 }
 
 // New round proxy servers
-func New(conf *config.Config, DNSdb *db.DNS) *Proxy {
+func New(conf *config.Config, DNSdb *db.DNS) GusProxy {
 	logrus.Debugf("init proxy")
 	if DNSdb == nil {
 		logrus.Fatal("DNS DB is nil")
@@ -135,7 +137,7 @@ func New(conf *config.Config, DNSdb *db.DNS) *Proxy {
 	if len(conf.ProxyHosts()) == 0 {
 		logrus.Fatal("No available proxy to use")
 	}
-	return &Proxy{
+	return &Gustavo{
 		proxyHosts: conf.ProxyHosts,
 		scheduler:  conf.Scheduler,
 		dnsDB:      DNSdb,

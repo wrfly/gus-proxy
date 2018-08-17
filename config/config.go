@@ -11,9 +11,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/elazarl/goproxy"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/sirupsen/logrus"
 
 	"github.com/wrfly/gus-proxy/types"
@@ -31,6 +28,7 @@ type Config struct {
 
 	proxyFilePathIsURL  bool
 	proxyHosts          []*types.ProxyHost
+	oldHosts            []string
 	availableProxyHosts []*types.ProxyHost
 
 	m sync.RWMutex
@@ -74,8 +72,11 @@ func (c *Config) Validate() error {
 // LoadHosts returns the proxy hosts
 func (c *Config) loadHosts() error {
 	logrus.Debug("load proxy hosts")
-	var proxyfile io.ReadCloser
-	proxyHosts := []*types.ProxyHost{}
+	var (
+		proxyfile  io.ReadCloser
+		proxyHosts []*types.ProxyHost
+		newHosts   []string
+	)
 
 	if c.proxyFilePathIsURL {
 		resp, err := http.DefaultClient.Get(c.ProxyFilePath)
@@ -117,28 +118,33 @@ func (c *Config) loadHosts() error {
 			continue
 		}
 
-		host := &types.ProxyHost{
-			Addr: s,
-		}
-		proxyHosts = append(proxyHosts, host)
+		newHosts = append(newHosts, s)
 	}
 
-	opts := cmp.Options{
-		// ignore type(http, socks5...)
-		cmpopts.IgnoreFields(types.ProxyHost{}, "Type"),
-		// ignore ping value, available and the *goproxy
-		cmpopts.IgnoreTypes(types.ProxyHost{}.Ping, true, &goproxy.ProxyHttpServer{}),
+	c.m.RLock()
+	oldHostsMap := make(map[string]bool, len(newHosts))
+	for _, host := range c.oldHosts {
+		oldHostsMap[host] = true
 	}
-	if !cmp.Equal(proxyHosts, c.proxyHosts, opts) {
-		logrus.Info("Creating new proxies...")
-		for _, host := range proxyHosts {
-			if err := host.Init(); err != nil {
+	for i, host := range newHosts {
+		if oldHostsMap[host] {
+			proxyHosts = append(proxyHosts, c.proxyHosts[i])
+		} else {
+			p := &types.ProxyHost{
+				Addr: host,
+			}
+			if err := p.Init(); err != nil {
 				logrus.Errorf("Create proxyies error: %s", err)
 				continue
 			}
+			proxyHosts = append(proxyHosts, p)
 		}
-		c.proxyHosts = proxyHosts
 	}
+	c.m.RUnlock()
+
+	c.m.Lock()
+	c.proxyHosts = proxyHosts
+	c.m.Unlock()
 
 	return nil
 }
