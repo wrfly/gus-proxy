@@ -29,7 +29,9 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	// rebuild request
 	r.URL.Host = utils.SelectIP(r.Host, p.dnsDB)
-	r.Header.Set("User-Agent", utils.SelectUA(p.ua))
+	if p.ua != "" {
+		r.Header.Set("User-Agent", utils.RandomUA())
+	}
 
 	selectedProxy := p.SelectProxy()
 	if selectedProxy != nil {

@@ -8,7 +8,6 @@ import (
 
 	"github.com/elazarl/goproxy"
 	"github.com/sirupsen/logrus"
-	"github.com/wrfly/gus-proxy/utils"
 	"golang.org/x/net/proxy"
 )
 
@@ -59,14 +58,19 @@ func (host *ProxyHost) CheckAvaliable() (err error) {
 		clnt.Transport = host.GoProxy.Tr
 	}
 
-	_, err = clnt.Get("https://www.baidu.com/home/msg/data/personalcontent")
+	req, _ := http.NewRequest("GET",
+		"http://www.baidu.com/home/msg/data/personalcontent", nil)
+	req.Header.Set("HOST", "61.135.169.125")
+	_, err = clnt.Do(req)
 	if err != nil {
 		host.Available = false
 		logrus.Debugf("Proxy [%s] is not available, error: %s", host.Addr, err)
 		return err
 	}
 	host.Available = true
-	host.Ping = utils.Ping(host.u.Hostname())
+	// TODO: ping is not avaliable since different operating system
+	// has different ping
+	// host.Ping = utils.Ping(host.u.Hostname())
 
 	return nil
 }

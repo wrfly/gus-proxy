@@ -14,7 +14,7 @@ func TestPing(t *testing.T) {
 	t.Log(Ping("kfd.me"))
 }
 
-func Test(t *testing.T) {
+func TestParsePing(t *testing.T) {
 	o := `PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
 64 bytes from 8.8.8.8: icmp_seq=1 ttl=39 time=63.4 ms
 64 bytes from 8.8.8.8: icmp_seq=2 ttl=39 time=59.4 ms
@@ -43,6 +43,8 @@ func TestDig(t *testing.T) {
 }
 
 func TestSelectUA(t *testing.T) {
-	fmt.Println(SelectUA(""))
-	fmt.Println(SelectUA("curl"))
+	ua1, ua2 := RandomUA(), RandomUA()
+	if ua1 == ua2 {
+		t.Error("random ua failed")
+	}
 }
