@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-
-	"github.com/wrfly/gus-proxy/db"
 )
 
 func TestPing(t *testing.T) {
@@ -32,19 +30,20 @@ rtt min/avg/max/mdev = 59.498/64.273/69.909/4.303 ms, ipg/ewma 200.829/63.797 ms
 
 }
 
-func TestDig(t *testing.T) {
-	dnsDB, _ := db.New()
-	defer dnsDB.Close()
-
-	fmt.Println(SelectIP("kfd.me", dnsDB))
-	fmt.Println(SelectIP("kfd.me:8080", dnsDB))
-	fmt.Println(SelectIP("kfd.me", dnsDB))
-	fmt.Println(SelectIP("www.zhihu.com", dnsDB))
-}
-
 func TestSelectUA(t *testing.T) {
 	ua1, ua2 := RandomUA(), RandomUA()
 	if ua1 == ua2 {
 		t.Error("random ua failed")
+	}
+}
+
+func TestHashSlice(t *testing.T) {
+	slice := []string{"1", "2", "3"}
+	if HashSlice(slice) != HashSlice(slice) {
+		t.Error("not equal")
+	}
+
+	if HashSlice(slice) == HashSlice(append(slice, "4")) {
+		t.Error("equal")
 	}
 }

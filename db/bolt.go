@@ -2,13 +2,13 @@ package db
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 
 	"github.com/boltdb/bolt"
 	"github.com/sirupsen/logrus"
 
-	"github.com/wrfly/go/src/math/rand"
 	"github.com/wrfly/gus-proxy/utils"
 )
 

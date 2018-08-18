@@ -14,6 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/wrfly/gus-proxy/types"
+	"github.com/wrfly/gus-proxy/utils"
 )
 
 // Config ...
@@ -27,6 +28,8 @@ type Config struct {
 	ProxyUpdateInterval int
 	DBFilePath          string
 
+	proxyHostsHash      string
+	proxyAliveHash      string
 	proxyFilePathIsURL  bool
 	proxyHosts          []*types.ProxyHost
 	oldHosts            []string
@@ -77,6 +80,7 @@ func (c *Config) loadHosts() error {
 		proxyfile  io.ReadCloser
 		proxyHosts []*types.ProxyHost
 		newHosts   []string
+		err        error
 	)
 
 	if c.proxyFilePathIsURL {
@@ -86,7 +90,10 @@ func (c *Config) loadHosts() error {
 		}
 		proxyfile = resp.Body
 	} else {
-		proxyfile, _ = os.Open(c.ProxyFilePath)
+		proxyfile, err = os.Open(c.ProxyFilePath)
+		if err != nil {
+			return err
+		}
 	}
 	defer proxyfile.Close()
 	lines := bufio.NewReader(proxyfile)
@@ -121,6 +128,10 @@ func (c *Config) loadHosts() error {
 
 		newHosts = append(newHosts, s)
 	}
+	if c.proxyHostsHash == utils.HashSlice(newHosts) {
+		return nil
+	}
+	c.proxyHostsHash = utils.HashSlice(newHosts)
 
 	c.m.RLock()
 	oldHostsMap := make(map[string]bool, len(newHosts))
@@ -192,6 +203,18 @@ func (c *Config) UpdateProxies() {
 			availableNum, totalNum)
 	}
 
+	oldHosts := make([]string, 0, len(c.proxyHosts))
+	for _, host := range c.proxyHosts {
+		if host.Available {
+			oldHosts = append(oldHosts, host.Addr)
+		}
+	}
+	if c.proxyAliveHash == utils.HashSlice(oldHosts) {
+		logrus.Debugf("alive proxy not changed, continue updating")
+		return
+	}
+	c.proxyAliveHash = utils.HashSlice(oldHosts)
+
 	c.m.Lock()
 	c.availableProxyHosts = nil
 	for _, ph := range c.proxyHosts {
@@ -199,7 +222,7 @@ func (c *Config) UpdateProxies() {
 			c.availableProxyHosts = append(c.availableProxyHosts, ph)
 		}
 	}
-	logrus.Debugf("append %d available proxies", len(c.availableProxyHosts))
+	logrus.Debugf("update %d available proxies", len(c.availableProxyHosts))
 	c.m.Unlock()
 
 }

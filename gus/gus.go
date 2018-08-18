@@ -20,7 +20,8 @@ type GusProxy http.Handler
 
 // Gustavo main structure
 type Gustavo struct {
-	proxyHosts func() []*types.ProxyHost
+	proxyHosts  func() []*types.ProxyHost
+	directProxy *goproxy.ProxyHttpServer
 
 	scheduler string // round-robin/random/ping
 	randomUA  bool
@@ -51,39 +52,24 @@ func (gs *Gustavo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	// when thereis no proxy available, we connect the target directly
 	logrus.Error("No proxy available, direct connect")
-	gp := goproxy.NewProxyHttpServer()
-	gp.ServeHTTP(w, r)
+	gs.directProxy.ServeHTTP(w, r)
 }
 
 // SelectProxy returns a proxy depends on your scheduler
 func (gs *Gustavo) SelectProxy() (rProxy *types.ProxyHost) {
-	// make sure that we can select one at least
-	proxyavailable := false
-	ph := gs.proxyHosts()
-	for _, p := range ph {
-		if p.Available {
-			proxyavailable = true
-			break
-		}
-	}
-	if !proxyavailable {
+	if len(gs.proxyHosts()) == 0 {
+		// no proxy avaliable
 		return nil
 	}
 
-ReSelect:
 	switch gs.scheduler {
 	case types.ROUND_ROBIN:
-		rProxy = gs.roundRobin()
+		return gs.roundRobin()
 	case types.RANDOM:
-		rProxy = gs.randomProxy()
+		return gs.randomProxy()
 	default:
-		rProxy = gs.roundRobin()
+		return gs.roundRobin()
 	}
-	if !rProxy.Available {
-		goto ReSelect
-	}
-
-	return rProxy
 }
 
 func (gs *Gustavo) roundRobin() *types.ProxyHost {
@@ -91,14 +77,13 @@ func (gs *Gustavo) roundRobin() *types.ProxyHost {
 	defer gs.m.Unlock()
 
 	ph := gs.proxyHosts()
-	if gs.next == len(ph) {
+	// if next greater than total num, reset to 0
+	if gs.next >= len(ph) {
 		gs.next = 0
 	}
-	use := gs.next
-	rProxy := ph[use]
 	gs.next++
 
-	return rProxy
+	return ph[gs.next-1]
 }
 
 func (gs *Gustavo) randomProxy() *types.ProxyHost {
@@ -144,9 +129,10 @@ func New(conf *config.Config, DNSdb *db.DNS) GusProxy {
 		logrus.Fatal("No available proxy to use")
 	}
 	return &Gustavo{
-		proxyHosts: conf.ProxyHosts,
-		scheduler:  conf.Scheduler,
-		dnsDB:      DNSdb,
-		randomUA:   conf.RandomUA,
+		proxyHosts:  conf.ProxyHosts,
+		scheduler:   conf.Scheduler,
+		dnsDB:       DNSdb,
+		randomUA:    conf.RandomUA,
+		directProxy: goproxy.NewProxyHttpServer(),
 	}
 }
