@@ -49,11 +49,11 @@ func initGoProxy(host *ProxyHost) error {
 	host.Auth, host.Type, hostAndPort = splitURL(host.Addr)
 	switch host.Type {
 	case "direct":
-		host.GoProxy = proxyDirect()
+		host.goProxy = proxyDirect()
 	case "http":
-		host.GoProxy, err = proxyHTTP(host.Addr)
+		host.goProxy, err = proxyHTTP(host.Addr)
 	case "socks5":
-		host.GoProxy, err = proxySocks5(hostAndPort, host.Auth)
+		host.goProxy, err = proxySocks5(hostAndPort, host.Auth)
 	case "https":
 	// TODO: add https proxy
 	default:

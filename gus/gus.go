@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"net/http"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/elazarl/goproxy"
@@ -20,25 +21,27 @@ type GusProxy http.Handler
 // Gustavo main structure
 type Gustavo struct {
 	proxyHosts func() []*types.ProxyHost
-	scheduler  string // round-robin/random/ping
-	ua         string
-	dnsDB      *db.DNS
-	next       int
+
+	scheduler string // round-robin/random/ping
+	randomUA  bool
+	dnsDB     *db.DNS
+	next      int
+	m         sync.Mutex
 }
 
 func (gs *Gustavo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	logrus.Debugf("Request: %v", r.URL)
 	defer r.Body.Close()
 	// rebuild request
-	r.URL.Host = utils.SelectIP(r.Host, gs.dnsDB)
-	if gs.ua != "" {
+	r.URL.Host = gs.dnsDB.SelectIP(r.Host)
+	if gs.randomUA {
 		r.Header.Set("User-Agent", utils.RandomUA())
 	}
 
 	selectedProxy := gs.SelectProxy()
 	if selectedProxy != nil {
 		logrus.Debugf("Use proxy: %s", selectedProxy.Addr)
-		selectedProxy.GoProxy.ServeHTTP(w, r)
+		selectedProxy.ServeHTTP(w, r)
 		if w.Header().Get("PROXY_CODE") == "500" {
 			selectedProxy.Available = false
 			// proxy is down
@@ -84,6 +87,9 @@ ReSelect:
 }
 
 func (gs *Gustavo) roundRobin() *types.ProxyHost {
+	gs.m.Lock()
+	defer gs.m.Unlock()
+
 	ph := gs.proxyHosts()
 	if gs.next == len(ph) {
 		gs.next = 0
@@ -141,6 +147,6 @@ func New(conf *config.Config, DNSdb *db.DNS) GusProxy {
 		proxyHosts: conf.ProxyHosts,
 		scheduler:  conf.Scheduler,
 		dnsDB:      DNSdb,
-		ua:         conf.UA,
+		randomUA:   conf.RandomUA,
 	}
 }

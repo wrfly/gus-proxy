@@ -23,8 +23,9 @@ type Config struct {
 	Scheduler           string
 	ListenPort          string
 	DebugPort           string
-	UA                  string
+	RandomUA            bool
 	ProxyUpdateInterval int
+	DBFilePath          string
 
 	proxyFilePathIsURL  bool
 	proxyHosts          []*types.ProxyHost

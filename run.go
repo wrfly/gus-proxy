@@ -63,7 +63,7 @@ func runGus(conf *config.Config) error {
 
 	// init db
 	logrus.Debug("init dns db")
-	dnsDB, err := db.New()
+	dnsDB, err := db.New(conf.DBFilePath)
 	if err != nil {
 		logrus.Fatal(err)
 	}

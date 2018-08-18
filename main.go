@@ -41,6 +41,12 @@ func main() {
 				Usage:       "proxy file path, filepath or URL",
 				Destination: &conf.ProxyFilePath,
 			},
+			&cli.StringFlag{
+				Name:        "db-path",
+				Value:       "gus-proxy.db",
+				Usage:       "bolt db storage",
+				Destination: &conf.DBFilePath,
+			},
 			&cli.BoolFlag{
 				Name:        "debug",
 				Aliases:     []string{"d"},
@@ -67,11 +73,11 @@ func main() {
 				Usage:       "port for pprof debug",
 				Destination: &conf.DebugPort,
 			},
-			&cli.StringFlag{
-				Name:        "ua",
-				Value:       "",
-				Usage:       "specific UA, random UA if empty",
-				Destination: &conf.UA,
+			&cli.BoolFlag{
+				Name:        "random-ua",
+				Aliases:     []string{"ru"},
+				Usage:       "enable random UA",
+				Destination: &conf.RandomUA,
 			},
 			&cli.IntFlag{
 				Name:        "update",

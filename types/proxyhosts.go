@@ -13,13 +13,18 @@ import (
 
 // ProxyHost defines the proxy
 type ProxyHost struct {
-	Type      string // http or socks5 or direct
-	Addr      string // 127.0.0.1:1080
-	u         *url.URL
+	Type      string  // http or socks5 or direct
+	Addr      string  // 127.0.0.1:1080
 	Ping      float32 // 66 ms
 	Available bool
 	Auth      proxy.Auth
-	GoProxy   *goproxy.ProxyHttpServer
+
+	u       *url.URL
+	goProxy *goproxy.ProxyHttpServer
+}
+
+func (host *ProxyHost) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	host.goProxy.ServeHTTP(w, r)
 }
 
 func (host *ProxyHost) Init() (err error) {
@@ -54,8 +59,8 @@ func (host *ProxyHost) CheckAvaliable() (err error) {
 	logrus.Debugf("CheckProxyAvailable [%s]", host.Addr)
 
 	clnt := &http.Client{Timeout: 3 * time.Second}
-	if host.GoProxy != nil {
-		clnt.Transport = host.GoProxy.Tr
+	if host.goProxy != nil {
+		clnt.Transport = host.goProxy.Tr
 	}
 
 	req, _ := http.NewRequest("GET",
