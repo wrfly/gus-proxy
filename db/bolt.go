@@ -50,12 +50,7 @@ func New(dbFileName string) (*DNS, error) {
 
 // Close the DB
 func (d *DNS) Close() error {
-	path := d.db.Path()
-	err := d.db.Close()
-	if err != nil {
-		return err
-	}
-	return os.Remove(path)
+	return d.db.Close()
 }
 
 // setDNS to the DB
