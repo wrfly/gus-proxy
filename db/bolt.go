@@ -88,8 +88,8 @@ func (d *DNS) query(domain string) (answer []string) {
 
 // SelectIP domain -> IP
 // kfd.me:8080 -> xx.x.xx.x:8080
-func (dnsDB *DNS) SelectIP(host string) string {
-	str := strings.Split(host, ":")
+func (dnsDB *DNS) SelectIP(domainPort string) (host, hostPort string) {
+	str := strings.Split(domainPort, ":")
 	domain := str[0]
 	port := "80"
 	if len(str) == 2 {
@@ -103,7 +103,7 @@ func (dnsDB *DNS) SelectIP(host string) string {
 		digIPs, err := utils.LookupHost(domain)
 		if err != nil {
 			logrus.Errorf("Dig Error: %s", err)
-			return "127.0.0.1:80"
+			return "127.0.0.1", "127.0.0.1:80"
 		}
 		// set to db
 		logrus.Debugf("Set DNS DB: domain: %s IP: %v", domain, digIPs)
@@ -113,6 +113,8 @@ func (dnsDB *DNS) SelectIP(host string) string {
 		ips = digIPs
 	}
 
-	ip := ips[rand.Int()%len(ips)]
-	return fmt.Sprintf("%s:%s", ip, port)
+	host = ips[rand.Int()%len(ips)]
+	hostPort = host + ":" + port
+
+	return
 }

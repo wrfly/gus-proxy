@@ -2,7 +2,11 @@ package main
 
 import (
 	"fmt"
+	"sort"
+
+	"github.com/sirupsen/logrus"
 	// go  pprof ...
+	"net"
 	_ "net/http/pprof"
 	"os"
 
@@ -25,7 +29,9 @@ OPTIONS:
 {{end}}{{end}}`
 
 func main() {
-	conf := &config.Config{}
+	conf := &config.Config{
+		NoProxyCIDR: make([]*net.IPNet, 0),
+	}
 
 	app := cli.App{
 		Name:  "gus-proxy",
@@ -40,6 +46,12 @@ func main() {
 				Value:       "proxyhosts.txt",
 				Usage:       "proxy file path, filepath or URL",
 				Destination: &conf.ProxyFilePath,
+			},
+			&cli.StringSliceFlag{
+				Name:    "no-proxy-cidr",
+				Aliases: []string{"np"},
+				Value:   cli.NewStringSlice("127.0.0.0/32"),
+				Usage:   "no proxy CIDR list",
 			},
 			&cli.StringFlag{
 				Name:        "db-path",
@@ -88,8 +100,21 @@ func main() {
 		},
 		CustomAppHelpTemplate: helpTemplate,
 		Action: func(c *cli.Context) error {
+			logrus.SetLevel(logrus.DebugLevel)
+
+			for _, cidr := range c.StringSlice("no-proxy-cidr") {
+				_, n, err := net.ParseCIDR(cidr)
+				if err != nil {
+					logrus.Fatalf("invalid CIDR: %s, error: %s", cidr, err)
+				}
+				logrus.Debugf("append CIDR %s", n.String())
+				conf.NoProxyCIDR = append(conf.NoProxyCIDR, n)
+			}
 			return runGus(conf)
 		},
 	}
+
+	sort.Sort(cli.FlagsByName(app.Flags))
+
 	app.Run(os.Args)
 }

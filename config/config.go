@@ -21,6 +21,7 @@ import (
 type Config struct {
 	Debug               bool
 	ProxyFilePath       string
+	NoProxyCIDR         []*net.IPNet
 	Scheduler           string
 	ListenPort          string
 	DebugPort           string

@@ -2,6 +2,7 @@ package gus
 
 import (
 	"math/rand"
+	"net"
 	"net/http"
 	"sort"
 	"sync"
@@ -22,6 +23,7 @@ type GusProxy http.Handler
 type Gustavo struct {
 	proxyHosts  func() []*types.ProxyHost
 	directProxy *goproxy.ProxyHttpServer
+	noProxyList []*net.IPNet
 
 	scheduler string // round-robin/random/ping
 	randomUA  bool
@@ -33,10 +35,18 @@ type Gustavo struct {
 func (gs *Gustavo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	logrus.Debugf("Request: %v", r.URL)
 	defer r.Body.Close()
+
 	// rebuild request
-	r.URL.Host = gs.dnsDB.SelectIP(r.Host)
+	hostIP := ""
+	hostIP, r.URL.Host = gs.dnsDB.SelectIP(r.Host)
 	if gs.randomUA {
 		r.Header.Set("User-Agent", utils.RandomUA())
+	}
+
+	if gs.notProxyThisHost(hostIP) {
+		logrus.Debugf("do not proxy this IP(%s), goto to direct", hostIP)
+		gs.directProxy.ServeHTTP(w, r)
+		return
 	}
 
 	selectedProxy := gs.SelectProxy()
@@ -50,6 +60,7 @@ func (gs *Gustavo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+
 	// when thereis no proxy available, we connect the target directly
 	logrus.Error("No proxy available, direct connect")
 	gs.directProxy.ServeHTTP(w, r)
@@ -119,6 +130,16 @@ func (gs *Gustavo) pingProxy() *types.ProxyHost {
 	return rProxy
 }
 
+func (gs *Gustavo) notProxyThisHost(host string) bool {
+	for _, n := range gs.noProxyList {
+		logrus.Debug("net: ", n.String(), net.ParseIP(host).String())
+		if n.Contains(net.ParseIP(host)) {
+			return true
+		}
+	}
+	return false
+}
+
 // New round proxy servers
 func New(conf *config.Config, DNSdb *db.DNS) GusProxy {
 	logrus.Debugf("init proxy")
@@ -131,6 +152,7 @@ func New(conf *config.Config, DNSdb *db.DNS) GusProxy {
 	return &Gustavo{
 		proxyHosts:  conf.ProxyHosts,
 		scheduler:   conf.Scheduler,
+		noProxyList: conf.NoProxyCIDR,
 		dnsDB:       DNSdb,
 		randomUA:    conf.RandomUA,
 		directProxy: goproxy.NewProxyHttpServer(),
