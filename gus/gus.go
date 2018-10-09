@@ -54,14 +54,14 @@ func (gs *Gustavo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		logrus.Debugf("Use proxy: %s", selectedProxy.Addr)
 		selectedProxy.ServeHTTP(w, r)
 		if w.Header().Get("PROXY_CODE") == "500" {
+			// FIXME: potential data race
 			selectedProxy.Available = false
 			// proxy is down
 			logrus.Errorf("Proxy [%s] is down", selectedProxy.Addr)
 		}
 		return
 	}
-
-	// when thereis no proxy available, we connect the target directly
+	// when there is no proxy available, we connect the target directly
 	logrus.Error("No proxy available, direct connect")
 	gs.directProxy.ServeHTTP(w, r)
 }
