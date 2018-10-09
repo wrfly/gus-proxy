@@ -11,26 +11,29 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/elazarl/goproxy"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/sirupsen/logrus"
 
 	"github.com/wrfly/gus-proxy/types"
+	"github.com/wrfly/gus-proxy/utils"
 )
 
 // Config ...
 type Config struct {
 	Debug               bool
 	ProxyFilePath       string
+	NoProxyCIDR         []*net.IPNet
 	Scheduler           string
 	ListenPort          string
 	DebugPort           string
-	UA                  string
+	RandomUA            bool
 	ProxyUpdateInterval int
+	DBFilePath          string
 
+	proxyHostsHash      string
+	proxyAliveHash      string
 	proxyFilePathIsURL  bool
 	proxyHosts          []*types.ProxyHost
+	oldHosts            []string
 	availableProxyHosts []*types.ProxyHost
 
 	m sync.RWMutex
@@ -74,8 +77,12 @@ func (c *Config) Validate() error {
 // LoadHosts returns the proxy hosts
 func (c *Config) loadHosts() error {
 	logrus.Debug("load proxy hosts")
-	var proxyfile io.ReadCloser
-	proxyHosts := []*types.ProxyHost{}
+	var (
+		proxyfile  io.ReadCloser
+		proxyHosts []*types.ProxyHost
+		newHosts   []string
+		err        error
+	)
 
 	if c.proxyFilePathIsURL {
 		resp, err := http.DefaultClient.Get(c.ProxyFilePath)
@@ -84,7 +91,10 @@ func (c *Config) loadHosts() error {
 		}
 		proxyfile = resp.Body
 	} else {
-		proxyfile, _ = os.Open(c.ProxyFilePath)
+		proxyfile, err = os.Open(c.ProxyFilePath)
+		if err != nil {
+			return err
+		}
 	}
 	defer proxyfile.Close()
 	lines := bufio.NewReader(proxyfile)
@@ -117,28 +127,37 @@ func (c *Config) loadHosts() error {
 			continue
 		}
 
-		host := &types.ProxyHost{
-			Addr: s,
-		}
-		proxyHosts = append(proxyHosts, host)
+		newHosts = append(newHosts, s)
 	}
+	if c.proxyHostsHash == utils.HashSlice(newHosts) {
+		return nil
+	}
+	c.proxyHostsHash = utils.HashSlice(newHosts)
 
-	opts := cmp.Options{
-		// ignore type(http, socks5...)
-		cmpopts.IgnoreFields(types.ProxyHost{}, "Type"),
-		// ignore ping value, available and the *goproxy
-		cmpopts.IgnoreTypes(types.ProxyHost{}.Ping, true, &goproxy.ProxyHttpServer{}),
+	c.m.RLock()
+	oldHostsMap := make(map[string]bool, len(newHosts))
+	for _, host := range c.oldHosts {
+		oldHostsMap[host] = true
 	}
-	if !cmp.Equal(proxyHosts, c.proxyHosts, opts) {
-		logrus.Info("Creating new proxies...")
-		for _, host := range proxyHosts {
-			if err := host.Init(); err != nil {
+	for i, host := range newHosts {
+		if oldHostsMap[host] {
+			proxyHosts = append(proxyHosts, c.proxyHosts[i])
+		} else {
+			p := &types.ProxyHost{
+				Addr: host,
+			}
+			if err := p.Init(); err != nil {
 				logrus.Errorf("Create proxyies error: %s", err)
 				continue
 			}
+			proxyHosts = append(proxyHosts, p)
 		}
-		c.proxyHosts = proxyHosts
 	}
+	c.m.RUnlock()
+
+	c.m.Lock()
+	c.proxyHosts = proxyHosts
+	c.m.Unlock()
 
 	return nil
 }
@@ -185,6 +204,18 @@ func (c *Config) UpdateProxies() {
 			availableNum, totalNum)
 	}
 
+	oldHosts := make([]string, 0, len(c.proxyHosts))
+	for _, host := range c.proxyHosts {
+		if host.Available {
+			oldHosts = append(oldHosts, host.Addr)
+		}
+	}
+	if c.proxyAliveHash == utils.HashSlice(oldHosts) {
+		logrus.Debugf("alive proxy not changed, continue updating")
+		return
+	}
+	c.proxyAliveHash = utils.HashSlice(oldHosts)
+
 	c.m.Lock()
 	c.availableProxyHosts = nil
 	for _, ph := range c.proxyHosts {
@@ -192,7 +223,7 @@ func (c *Config) UpdateProxies() {
 			c.availableProxyHosts = append(c.availableProxyHosts, ph)
 		}
 	}
-	logrus.Debugf("append %d available proxies", len(c.availableProxyHosts))
+	logrus.Debugf("update %d available proxies", len(c.availableProxyHosts))
 	c.m.Unlock()
 
 }

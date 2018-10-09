@@ -37,9 +37,8 @@ test:
 	go test -cover -v `glide nv`
 
 .PHONY: dev
-dev:
-	go build -o $(NAME)
-	./$(NAME) run -f proxyhosts_test.txt -d
+dev: build
+	./$(BIN)/$(NAME) -f proxyhosts_test.txt -d
 
 .PHONY: curl
 curl:

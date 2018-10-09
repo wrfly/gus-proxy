@@ -1,4 +1,4 @@
-package round
+package gus
 
 import (
 	"fmt"
@@ -45,7 +45,7 @@ func TestRoundProxy(t *testing.T) {
 			ListenPort:    "54321",
 			ProxyFilePath: "../proxyhosts.txt",
 			Scheduler:     types.ROUND_ROBIN,
-			UA:            "",
+			RandomUA:      true,
 		}
 		err := c.Validate()
 		assert.NoError(t, err)
@@ -55,7 +55,7 @@ func TestRoundProxy(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, l)
 
-		DNSdb, err := db.New()
+		DNSdb, err := db.New("/tmp/gus.db")
 		if err != nil {
 			logrus.Fatalf("init dns db error: %s", err)
 		}
@@ -116,7 +116,7 @@ func generateProxys() []*types.ProxyHost {
 }
 
 func TestPingProxy(t *testing.T) {
-	p := &Proxy{
+	p := &Gustavo{
 		proxyHosts: generateProxys,
 		scheduler:  types.PING,
 	}

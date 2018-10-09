@@ -8,19 +8,23 @@ import (
 
 	"github.com/elazarl/goproxy"
 	"github.com/sirupsen/logrus"
-	"github.com/wrfly/gus-proxy/utils"
 	"golang.org/x/net/proxy"
 )
 
 // ProxyHost defines the proxy
 type ProxyHost struct {
-	Type      string // http or socks5 or direct
-	Addr      string // 127.0.0.1:1080
-	u         *url.URL
+	Type      string  // http or socks5 or direct
+	Addr      string  // 127.0.0.1:1080
 	Ping      float32 // 66 ms
 	Available bool
 	Auth      proxy.Auth
-	GoProxy   *goproxy.ProxyHttpServer
+
+	u       *url.URL
+	goProxy *goproxy.ProxyHttpServer
+}
+
+func (host *ProxyHost) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	host.goProxy.ServeHTTP(w, r)
 }
 
 func (host *ProxyHost) Init() (err error) {
@@ -55,18 +59,23 @@ func (host *ProxyHost) CheckAvaliable() (err error) {
 	logrus.Debugf("CheckProxyAvailable [%s]", host.Addr)
 
 	clnt := &http.Client{Timeout: 3 * time.Second}
-	if host.GoProxy != nil {
-		clnt.Transport = host.GoProxy.Tr
+	if host.goProxy != nil {
+		clnt.Transport = host.goProxy.Tr
 	}
 
-	_, err = clnt.Get("https://www.baidu.com/home/msg/data/personalcontent")
+	req, _ := http.NewRequest("GET",
+		"http://www.baidu.com/home/msg/data/personalcontent", nil)
+	req.Header.Set("HOST", "61.135.169.125")
+	_, err = clnt.Do(req)
 	if err != nil {
 		host.Available = false
 		logrus.Debugf("Proxy [%s] is not available, error: %s", host.Addr, err)
 		return err
 	}
 	host.Available = true
-	host.Ping = utils.Ping(host.u.Hostname())
+	// TODO: ping is not avaliable since different operating system
+	// has different ping
+	// host.Ping = utils.Ping(host.u.Hostname())
 
 	return nil
 }
