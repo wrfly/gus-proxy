@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/elazarl/goproxy"
 	"github.com/sirupsen/logrus"
@@ -65,16 +66,16 @@ func initGoProxy(host *ProxyHost) error {
 	var u *url.URL
 	u, host.Auth, host.Type, hostAndPort = splitURL(host.Addr)
 	switch host.Type {
-	case "direct":
+	case DIRECT:
 		host.goProxy = proxyDirect()
-	case "http":
+	case HTTP:
 		host.goProxy, err = proxyHTTP(host.Addr)
-	case "socks5":
+	case SOCKS5:
 		host.goProxy, err = proxySocks5(hostAndPort, host.Auth)
-	case "https":
+	case HTTPS:
 		// TODO:
 		// host.goProxy, err = proxyHTTPS(host.Addr)
-	case "socks4":
+	case SOCKS4:
 		host.goProxy, err = proxySocks4(u)
 	default:
 		return fmt.Errorf("[%s]: unknown protocol %s", host.Addr, host.Type)
@@ -96,5 +97,5 @@ func splitURL(URL string) (u *url.URL, auth proxy.Auth, scheme, host string) {
 		auth.Password, _ = u.User.Password()
 	}
 
-	return u, auth, scheme, host
+	return u, auth, strings.ToLower(scheme), host
 }
