@@ -33,7 +33,7 @@ type Gustavo struct {
 }
 
 func (gs *Gustavo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	logrus.Debugf("Request: %v", r.URL)
+	logrus.Debugf("request: %v", r.URL)
 	defer r.Body.Close()
 
 	// rebuild request
@@ -51,18 +51,18 @@ func (gs *Gustavo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	selectedProxy := gs.SelectProxy()
 	if selectedProxy != nil {
-		logrus.Debugf("Use proxy: %s", selectedProxy.Addr)
+		logrus.Debugf("use proxy: %s", selectedProxy.Addr)
 		selectedProxy.ServeHTTP(w, r)
 		if w.Header().Get("PROXY_CODE") == "500" {
 			// FIXME: potential data race
 			selectedProxy.Available = false
 			// proxy is down
-			logrus.Errorf("Proxy [%s] is down", selectedProxy.Addr)
+			logrus.Errorf("proxy [%s] is down", selectedProxy.Addr)
 		}
 		return
 	}
 	// when there is no proxy available, we connect the target directly
-	logrus.Error("No proxy available, direct connect")
+	logrus.Error("no proxy available, direct connect")
 	gs.directProxy.ServeHTTP(w, r)
 }
 
@@ -132,8 +132,9 @@ func (gs *Gustavo) pingProxy() *types.ProxyHost {
 
 func (gs *Gustavo) notProxyThisHost(host string) bool {
 	for _, n := range gs.noProxyList {
-		logrus.Debug("net: ", n.String(), net.ParseIP(host).String())
-		if n.Contains(net.ParseIP(host)) {
+		target := net.ParseIP(host)
+		if n.Contains(target) {
+			logrus.Debugf("no proxy %s %s", n, target)
 			return true
 		}
 	}
@@ -147,7 +148,7 @@ func New(conf *config.Config, DNSdb *db.DNS) GusProxy {
 		logrus.Fatal("DNS DB is nil")
 	}
 	if len(conf.ProxyHosts()) == 0 {
-		logrus.Fatal("No available proxy to use")
+		logrus.Fatal("no available proxy to use")
 	}
 	return &Gustavo{
 		proxyHosts:  conf.ProxyHosts,

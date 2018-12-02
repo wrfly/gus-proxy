@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/sirupsen/logrus"
 
@@ -32,9 +33,9 @@ type Config struct {
 	proxyHostsHash      string
 	proxyAliveHash      string
 	proxyFilePathIsURL  bool
-	proxyHosts          []*types.ProxyHost
+	proxyHosts          types.ProxyHosts
 	oldHosts            []string
-	availableProxyHosts []*types.ProxyHost
+	availableProxyHosts types.ProxyHosts
 
 	m sync.RWMutex
 }
@@ -79,7 +80,7 @@ func (c *Config) loadHosts() error {
 	logrus.Debug("load proxy hosts")
 	var (
 		proxyfile  io.ReadCloser
-		proxyHosts []*types.ProxyHost
+		proxyHosts types.ProxyHosts
 		newHosts   []string
 		err        error
 	)
@@ -139,20 +140,30 @@ func (c *Config) loadHosts() error {
 	for _, host := range c.oldHosts {
 		oldHostsMap[host] = true
 	}
+	var newProxyWG sync.WaitGroup
 	for i, host := range newHosts {
 		if oldHostsMap[host] {
-			proxyHosts = append(proxyHosts, c.proxyHosts[i])
+			if p := c.proxyHosts.Host(i); p != nil {
+				proxyHosts.Add(p)
+			}
 		} else {
-			p := &types.ProxyHost{
-				Addr: host,
-			}
-			if err := p.Init(); err != nil {
-				logrus.Errorf("Create proxyies error: %s", err)
-				continue
-			}
-			proxyHosts = append(proxyHosts, p)
+			newProxyWG.Add(1)
+			go func(host string) {
+				defer newProxyWG.Done()
+
+				proxyhost := &types.ProxyHost{
+					Addr: host,
+				}
+				if err := proxyhost.Init(); err != nil {
+					logrus.Errorf("init proxy [%s] error: %s", host, err)
+					return
+				}
+				proxyHosts.Add(proxyhost)
+			}(host)
 		}
 	}
+	newProxyWG.Wait()
+
 	c.m.RUnlock()
 
 	c.m.Lock()
@@ -166,46 +177,42 @@ func (c *Config) loadHosts() error {
 func (c *Config) UpdateProxies() {
 	err := c.loadHosts()
 	if err != nil {
-		logrus.Fatalf("load proxy error: %s", err)
+		logrus.Errorf("load proxy error: %s", err)
+		return
 	}
 
-	var wg sync.WaitGroup
-	availableProxy := struct {
-		n int
-		m sync.Mutex
-	}{}
-
-	for _, proxy := range c.proxyHosts {
+	var (
+		wg             sync.WaitGroup
+		availableProxy int32
+	)
+	for _, proxy := range c.proxyHosts.Hosts() {
 		wg.Add(1)
 		go func(proxy *types.ProxyHost) {
 			defer wg.Done()
-			proxy.Available = false
-			if proxy.CheckAvaliable() == nil {
-				availableProxy.m.Lock()
-				availableProxy.n++
-				availableProxy.m.Unlock()
-				proxy.Available = true
+			if err := proxy.CheckAvaliable(); err != nil {
+				proxy.Available = false
+			} else {
+				atomic.AddInt32(&availableProxy, 1)
 			}
-			logrus.Debugf("Proxy: %s, Available: %v, Ping: %f",
-				proxy.Addr, proxy.Available, proxy.Ping)
+			logrus.Debugf("proxy: %s, Available: %t",
+				proxy.Addr, proxy.Available)
 		}(proxy)
 	}
 	wg.Wait()
 
-	availableNum := availableProxy.n
-	totalNum := len(c.proxyHosts)
-	switch { // mast in this order (small to big)
-	case availableNum*4 <= totalNum:
-		logrus.Errorf("Not enough available proxys, available: [%d] total: [%d]",
-			availableNum, totalNum)
-		// some alert
-	case availableNum*2 <= totalNum:
-		logrus.Warnf("Half of the proxys was down, available: [%d] total: [%d]",
-			availableNum, totalNum)
+	totalNum := c.proxyHosts.Len()
+	// mast in this order (small to big)
+	switch {
+	case availableProxy*4 <= totalNum:
+		logrus.Errorf("Not enough available proxies, available: [%d] total: [%d]",
+			availableProxy, totalNum)
+	case availableProxy*2 <= totalNum:
+		logrus.Warnf("Half of the proxies was down, available: [%d] total: [%d]",
+			availableProxy, totalNum)
 	}
 
-	oldHosts := make([]string, 0, len(c.proxyHosts))
-	for _, host := range c.proxyHosts {
+	oldHosts := make([]string, 0, c.proxyHosts.Len())
+	for _, host := range c.proxyHosts.Hosts() {
 		if host.Available {
 			oldHosts = append(oldHosts, host.Addr)
 		}
@@ -217,20 +224,18 @@ func (c *Config) UpdateProxies() {
 	c.proxyAliveHash = utils.HashSlice(oldHosts)
 
 	c.m.Lock()
-	c.availableProxyHosts = nil
-	for _, ph := range c.proxyHosts {
+	c.availableProxyHosts = types.ProxyHosts{}
+	for _, ph := range c.proxyHosts.Hosts() {
 		if ph.Available {
-			c.availableProxyHosts = append(c.availableProxyHosts, ph)
+			c.availableProxyHosts.Add(ph)
 		}
 	}
-	logrus.Debugf("update %d available proxies", len(c.availableProxyHosts))
+	logrus.Infof("update %d available proxies", c.availableProxyHosts.Len())
 	c.m.Unlock()
 
 }
 
 // ProxyHosts returns all the proxy hosts get from URL or a static file
 func (c *Config) ProxyHosts() []*types.ProxyHost {
-	c.m.RLock()
-	defer c.m.RUnlock()
-	return c.availableProxyHosts
+	return c.availableProxyHosts.Hosts()
 }
