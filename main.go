@@ -2,14 +2,12 @@ package main
 
 import (
 	"fmt"
-	"sort"
-
-	"github.com/sirupsen/logrus"
-	// go  pprof ...
 	"net"
 	_ "net/http/pprof"
 	"os"
+	"sort"
 
+	"github.com/sirupsen/logrus"
 	"gopkg.in/urfave/cli.v2"
 
 	"github.com/wrfly/gus-proxy/config"
@@ -63,6 +61,7 @@ func main() {
 				Name:        "debug",
 				Aliases:     []string{"d"},
 				Usage:       "debug mode",
+				Value:       false,
 				Destination: &conf.Debug,
 			},
 			&cli.StringFlag{
@@ -110,6 +109,8 @@ func main() {
 				logrus.Debugf("append CIDR %s", n.String())
 				conf.NoProxyCIDR = append(conf.NoProxyCIDR, n)
 			}
+			logrus.SetLevel(logrus.InfoLevel)
+
 			return runGus(conf)
 		},
 	}
