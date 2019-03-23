@@ -17,8 +17,7 @@ func TestHttpProxy(t *testing.T) {
 	assert.NoError(t, err)
 
 	c := http.Client{Transport: p.Tr}
-	r, _ := http.NewRequest("GET", "http://ipinfo.io", nil)
-	r.Header.Set("User-Agent", "curl")
+	r, _ := http.NewRequest("GET", "http://ip.kfd.me", nil)
 	resp, err := c.Do(r)
 	if err != nil {
 		t.Fatal(err)
@@ -38,8 +37,7 @@ func TestSocks5Proxy(t *testing.T) {
 	assert.NoError(t, err)
 
 	c := http.Client{Transport: p.Tr}
-	r, _ := http.NewRequest("GET", "http://ipinfo.io", nil)
-	r.Header.Set("User-Agent", "curl")
+	r, _ := http.NewRequest("GET", "http://ip.kfd.me", nil)
 	resp, err := c.Do(r)
 	if err != nil {
 		t.Fatal(err)
@@ -57,7 +55,7 @@ func TestDirect(t *testing.T) {
 	p := proxyDirect()
 
 	c := http.Client{Transport: p.Tr}
-	r, _ := http.NewRequest("GET", "http://ipinfo.io", nil)
+	r, _ := http.NewRequest("GET", "http://ip.kfd.me", nil)
 	r.Header.Set("User-Agent", "curl")
 	resp, err := c.Do(r)
 	if err != nil {
@@ -98,7 +96,7 @@ func TestSplitURL(t *testing.T) {
 		"https://usnerocxasd@localhost:8080",
 	}
 	for _, U := range URLS {
-		auth, scheme, hostAndPort := splitURL(U)
+		_, auth, scheme, hostAndPort := splitURL(U)
 		t.Log(auth, scheme, hostAndPort)
 	}
 }

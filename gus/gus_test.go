@@ -79,7 +79,7 @@ func TestRoundProxy(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				resp, err := clnt.Get("http://ipinfo.io")
+				resp, err := clnt.Get("http://ip.kfd.me")
 				assert.NoError(t, err)
 				if resp == nil {
 					return

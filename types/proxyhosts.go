@@ -1,7 +1,6 @@
 package types
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -105,31 +104,25 @@ func (host *ProxyHost) initProxy() (err error) {
 func (host *ProxyHost) CheckAvaliable() (err error) {
 	logrus.Debugf("check [%s] avaliable", host.Addr)
 
-	clnt := &http.Client{Timeout: 3 * time.Second}
+	cli := &http.Client{Timeout: 3 * time.Second}
 	if host.goProxy != nil {
-		clnt.Transport = host.goProxy.Tr
+		cli.Transport = host.goProxy.Tr
 	}
 
-	req, _ := http.NewRequest("GET", "http://ipinfo.io", nil)
-	req.Header.Set("HOST", "216.239.34.21")
-	resp, err := clnt.Do(req)
+	req, _ := http.NewRequest("GET", "http://ip.kfd.me", nil)
+	resp, err := cli.Do(req)
 	if err != nil {
-		logrus.Errorf("proxy [%s] is unavailable (request)", host.Addr)
-		logrus.Debugf("error: %s", err)
-		return err
+		return fmt.Errorf("proxy [%s] is unavailable (request)", host.Addr)
 	}
+	defer resp.Body.Close()
+
 	bs, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
-	x := utils.IPinfoJson{}
-	if err := json.Unmarshal(bs, &x); err != nil {
-		return err
-	}
-	logrus.Debugf("proxy [%s] got IP %s", host.Addr, x.IP)
-	if host.Type != DIRECT && x.IP == localIP {
-		logrus.Errorf("proxy [%s] is unavailable (same IP)", host.Addr)
-		return fmt.Errorf("bad proxy, same IP")
+	logrus.Debugf("proxy [%s] got IP %s", host.Addr, string(bs))
+	if host.Type != DIRECT && string(bs) == localIP {
+		return fmt.Errorf("bad proxy [%s], same IP", host.Addr)
 	}
 
 	host.Available = true

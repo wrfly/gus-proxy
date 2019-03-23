@@ -12,21 +12,11 @@ CTIMEVAR = -X main.CommitID=$(COMMITID) \
 	-X main.BuildAt=$(BUILDAT)
 GO_LDFLAGS = -ldflags "-s -w $(CTIMEVAR)" -tags netgo
 
-GLIDE_URL := https://github.com/Masterminds/glide/releases/download/v0.13.1/glide-v0.13.1-linux-amd64.tar.gz
-
-.PHONY: prepare
-prepare:
-	wget $(GLIDE_URL) -O glide.tgz -q
-	tar xzf glide.tgz
-	linux-amd64/glide install
+export GO111MODULE=on
 
 .PHONY: bin
 bin:
 	mkdir -p bin
-
-.PHONY: glide-up
-glide-up:
-	https_proxy=http://127.0.0.1:1081 glide up
 
 .PHONY: build
 build: bin

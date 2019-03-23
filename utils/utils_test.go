@@ -47,3 +47,11 @@ func TestHashSlice(t *testing.T) {
 		t.Error("equal")
 	}
 }
+
+func TestPubIP(t *testing.T) {
+	ip, err := PublicIP()
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(ip)
+}

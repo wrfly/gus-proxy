@@ -6,10 +6,9 @@ services:
 language: go
 
 go:
- - "1.10"
+ - "1.12"
 
 script:
-  - make prepare
   - make build
   - make image
 

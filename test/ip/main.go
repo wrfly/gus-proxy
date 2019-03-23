@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -10,17 +9,6 @@ import (
 	"sync/atomic"
 	"time"
 )
-
-type IPinfoJson struct {
-	IP       string `json:"ip,omitempty"`
-	HOSTNAME string `json:"hostname,omitempty"`
-	CITY     string `json:"city,omitempty"`
-	REGION   string `json:"region,omitempty"`
-	COUNTRY  string `json:"country,omitempty"`
-	LOC      string `json:"loc,omitempty"`
-	POSTAL   string `json:"postal,omitempty"`
-	ORG      string `json:"org,omitempty"`
-}
 
 var logE = log.New(os.Stderr, "[ERR] ", log.Ltime)
 var logI = log.New(os.Stderr, "[INFO] ", log.Ltime)
@@ -47,13 +35,12 @@ func main() {
 		go func() {
 			var (
 				resp *http.Response
-				x    = &IPinfoJson{}
 				bs   []byte
 				err  error
 			)
 			defer func() {
 				wg.Done()
-				if err != nil || x == nil {
+				if err != nil || bs == nil {
 					atomic.AddUint32(&failed, 1)
 					if err == nil {
 						logE.Printf("bad length of bytes: %d\n", len(bs))
@@ -63,22 +50,18 @@ func main() {
 					}
 					return
 				}
-				remoteIP := x.IP
+				remoteIP := string(bs)
 				logI.Printf("IP: %s", remoteIP)
 				ipMap[remoteIP] = true
 				atomic.AddUint32(&successed, 1)
 			}()
 
-			resp, err = c.Get("http://ipinfo.io")
+			resp, err = c.Get("http://ip.kfd.me")
 			if err != nil {
 				return
 			}
+			defer resp.Body.Close()
 			bs, err = ioutil.ReadAll(resp.Body)
-			if err != nil {
-				return
-			}
-			err = json.Unmarshal(bs, x)
-			resp.Body.Close()
 		}()
 	}
 
