@@ -14,7 +14,7 @@ import (
 
 	"github.com/wrfly/gus-proxy/config"
 	"github.com/wrfly/gus-proxy/db"
-	"github.com/wrfly/gus-proxy/gus"
+	"github.com/wrfly/gus-proxy/proxy"
 )
 
 func runGus(conf *config.Config) error {
@@ -80,7 +80,7 @@ func runGus(conf *config.Config) error {
 
 	srv := http.Server{
 		Addr:    fmt.Sprintf("0.0.0.0:%s", conf.ListenPort),
-		Handler: gus.New(conf, dnsDB),
+		Handler: proxy.New(conf, dnsDB),
 	}
 	go func() {
 		wg.Add(1)

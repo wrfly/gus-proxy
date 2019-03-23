@@ -1,4 +1,4 @@
-package gus
+package proxy
 
 import (
 	"fmt"
