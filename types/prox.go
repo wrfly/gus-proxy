@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -14,17 +15,47 @@ import (
 	_ "github.com/wrfly/gus-proxy/pkg/go-socks4"
 )
 
+const (
+	ProxyAuthHeader = "Proxy-Authorization"
+)
+
+func setBasicAuth(username, password string, req *http.Request) {
+	req.Header.Set(ProxyAuthHeader, fmt.Sprintf("Basic %s", basicAuth(username, password)))
+}
+
+func basicAuth(username, password string) string {
+	return base64.StdEncoding.EncodeToString([]byte(username + ":" + password))
+}
+
 func proxyHTTP(httpAddr string) (*goproxy.ProxyHttpServer, error) {
 	proxyURL, err := url.Parse(httpAddr)
 	if err != nil {
 		return nil, err
 	}
-	logrus.Debugf("New HTTP proxy Host: %s, Port: %s", proxyURL.Host, proxyURL.Port())
+	logrus.Debugf("new HTTP proxy Host: %s, Port: %s", proxyURL.Host, proxyURL.Port())
 
-	prox := goproxy.NewProxyHttpServer()
-	prox.Tr.Proxy = http.ProxyURL(proxyURL)
+	proxyServer := goproxy.NewProxyHttpServer()
+	proxyServer.Tr.Proxy = http.ProxyURL(proxyURL)
+	proxyServer.OnRequest().HandleConnect(goproxy.AlwaysMitm)
 
-	return prox, nil
+	if proxyURL.User.String() != "" {
+		pass, _ := proxyURL.User.Password()
+		user := proxyURL.User.Username()
+		proxyServer.ConnectDial = proxyServer.
+			NewConnectDialToProxyWithHandler(
+				proxyURL.String(),
+				func(req *http.Request) {
+					setBasicAuth(user, pass, req)
+				},
+			)
+		proxyServer.OnRequest().DoFunc(func(req *http.Request,
+			ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+			setBasicAuth(user, pass, req)
+			return req, nil
+		})
+	}
+
+	return proxyServer, nil
 }
 
 func proxySocks4(u *url.URL) (*goproxy.ProxyHttpServer, error) {

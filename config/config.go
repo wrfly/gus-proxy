@@ -145,7 +145,7 @@ func (c *Config) loadHosts() error {
 	}
 	var (
 		newProxyWG sync.WaitGroup
-		limit      = make(chan struct{}, 1e3)
+		limit      = make(chan struct{}, 200)
 		badProxy   uint32
 	)
 	for i, host := range newHosts {
@@ -164,6 +164,7 @@ func (c *Config) loadHosts() error {
 
 				proxyhost := &types.ProxyHost{Addr: host}
 				if err := proxyhost.Init(); err != nil {
+					logrus.Error(err)
 					atomic.AddUint32(&badProxy, 1)
 				} else {
 					proxyHosts.Add(proxyhost)

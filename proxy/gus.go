@@ -36,7 +36,7 @@ func (gs *Gustavo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	logrus.Debugf("request: %v", r.URL)
 	defer r.Body.Close()
 	// keep alive all requests
-	r.Header.Set("Connection", "keep-alive")
+	// r.Header.Set("Connection", "keep-alive")
 
 	// rebuild request
 	hostIP := ""
