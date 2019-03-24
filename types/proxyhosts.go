@@ -79,15 +79,13 @@ func (host *ProxyHost) Init() (err error) {
 		return err
 	}
 
-	if host.u.Scheme == "direct" {
-		return initGoProxy(host)
+	if host.u.Scheme != "direct" {
+		conn, err := net.DialTimeout("tcp", host.u.Host, 3*time.Second)
+		if err != nil {
+			return err
+		}
+		conn.Close()
 	}
-
-	conn, err := net.DialTimeout("tcp", host.u.Host, 1*time.Second)
-	if err != nil {
-		return fmt.Errorf("dial failed: %s", err)
-	}
-	conn.Close()
 
 	return initGoProxy(host)
 }
