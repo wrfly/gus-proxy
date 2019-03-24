@@ -12,9 +12,20 @@
 ## Run
 
 ```bash
+# prepare the proxies
+mkdir -p data
+touch data/proxies.txt
+# put your proxies in data/proxies.txt
+# the format could be:
+# socks5://127.0.0.1:1080
+# http://user:pass@127.0.0.1:1081
+# socks4://127.0.0.1:1082
+# direct://0.0.0.0
+
+# then:
 sudo docker run --rm -ti --name gus-proxy \
     -p 8080:8080 \
-    -v proxyhosts.txt:/proxyhosts.txt \
+    -v `pwd`/data:/data \
     wrfly/gus-proxy
 ```
 
