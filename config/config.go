@@ -220,10 +220,10 @@ func (c *Config) UpdateProxies() {
 	// mast in this order (small to big)
 	switch {
 	case availableProxy*4 <= totalNum:
-		logrus.Errorf("Not enough available proxies, available: [%d] total: [%d]",
+		logrus.Errorf("not enough available proxies, available: [%d] total: [%d]",
 			availableProxy, totalNum)
 	case availableProxy*2 <= totalNum:
-		logrus.Warnf("Half of the proxies was down, available: [%d] total: [%d]",
+		logrus.Warnf("half of the proxies was down, available: [%d] total: [%d]",
 			availableProxy, totalNum)
 	}
 

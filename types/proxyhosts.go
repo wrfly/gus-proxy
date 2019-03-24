@@ -73,18 +73,11 @@ func (host *ProxyHost) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (host *ProxyHost) Init() (err error) {
-	if err := host.initProxy(); err != nil {
-		return err
-	}
-	if err := host.CheckAvaliable(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (host *ProxyHost) initProxy() (err error) {
 	logrus.Debugf("init proxy [%s]", host.Addr)
 	host.u, err = url.Parse(host.Addr)
+	if err != nil {
+		return err
+	}
 
 	if host.u.Scheme == "direct" {
 		return initGoProxy(host)
