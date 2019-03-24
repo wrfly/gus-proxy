@@ -92,9 +92,7 @@ func (host *ProxyHost) initProxy() (err error) {
 
 	conn, err := net.DialTimeout("tcp", host.u.Host, 1*time.Second)
 	if err != nil {
-		logrus.Errorf("proxy [%s] is unavailable (dial)", host.Addr)
-		logrus.Debugf("error: %s", err)
-		return err
+		return fmt.Errorf("dial failed: %s", err)
 	}
 	conn.Close()
 
@@ -108,11 +106,11 @@ func (host *ProxyHost) CheckAvaliable() (err error) {
 	if host.goProxy != nil {
 		cli.Transport = host.goProxy.Tr
 	}
+	defer cli.CloseIdleConnections()
 
-	req, _ := http.NewRequest("GET", "http://ip.kfd.me", nil)
-	resp, err := cli.Do(req)
+	resp, err := cli.Get("http://ip.kfd.me")
 	if err != nil {
-		return fmt.Errorf("proxy [%s] is unavailable (request)", host.Addr)
+		return fmt.Errorf("request failed: %s", err)
 	}
 	defer resp.Body.Close()
 

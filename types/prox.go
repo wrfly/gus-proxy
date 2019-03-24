@@ -19,8 +19,7 @@ func proxyHTTP(httpAddr string) (*goproxy.ProxyHttpServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	logrus.Debugf("New HTTP proxy Host: %s, Port: %s",
-		proxyURL.Host, proxyURL.Port())
+	logrus.Debugf("New HTTP proxy Host: %s, Port: %s", proxyURL.Host, proxyURL.Port())
 
 	prox := goproxy.NewProxyHttpServer()
 	prox.Tr.Proxy = http.ProxyURL(proxyURL)

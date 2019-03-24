@@ -39,7 +39,7 @@ sudo docker run --rm -ti --name gus-proxy \
 1. 每次请求替换UA
 1. 请求资源的时候，查询目标资源地址全部的IP，随机
 
-## 展示
+## 效果
 
 ![Gus-Running](img/gus-run.png)
 ![Curl-test](img/gus-curl.png)

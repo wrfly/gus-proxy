@@ -32,8 +32,8 @@ dev: build
 
 .PHONY: curl
 curl:
-	for i in 1 2 3 4 5 ;do \
-		curl --proxy http://localhost:8080 ip.chinaz.com/getip.aspx ; \
+	for i in `seq 9`;do \
+		curl --proxy http://localhost:8080 i.kfd.me ; \
 	done
 
 .PHONY: release

@@ -21,10 +21,10 @@ func runGus(conf *config.Config) error {
 	if conf.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
-	logrus.Info("Gus is starting...")
+	logrus.Info("starting gus-proxy")
 
 	if err := conf.Validate(); err != nil {
-		logrus.Fatalf("Verify config error: %s", err)
+		logrus.Fatalf("bad config error: %s", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -32,14 +32,14 @@ func runGus(conf *config.Config) error {
 	var wg sync.WaitGroup
 
 	// update proxy status
-	upChan := make(chan interface{})
+	readyChan := make(chan interface{})
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
-		logrus.Info("Updating proxyies...")
+		logrus.Info("updating proxies")
 		conf.UpdateProxies()
-		upChan <- true
-		close(upChan)
+		readyChan <- true
+		close(readyChan)
 
 		tk := time.NewTicker(time.Second * time.Duration(conf.ProxyUpdateInterval))
 		defer tk.Stop()
@@ -52,7 +52,7 @@ func runGus(conf *config.Config) error {
 			}
 		}
 	}()
-	<-upChan
+	<-readyChan
 
 	// handle signals
 	logrus.Debug("handle sigs")
@@ -74,7 +74,7 @@ func runGus(conf *config.Config) error {
 			return
 		}
 		addr := fmt.Sprintf(":%s", conf.DebugPort)
-		logrus.Infof("Debug is running at %s", addr)
+		logrus.Infof("debug is serving on %s", addr)
 		http.ListenAndServe(addr, nil)
 	}()
 
@@ -85,16 +85,15 @@ func runGus(conf *config.Config) error {
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
-		logrus.Infof("Bind port [%s] and run...", conf.ListenPort)
-		err := srv.ListenAndServe()
-		if err != nil && err != http.ErrServerClosed {
+		logrus.Infof("serving on %s", srv.Addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logrus.Error(err)
 		}
 	}()
 
 	select {
 	case <-sigStop:
-		logrus.Info("About to stop")
+		logrus.Info("about to stop")
 		cancel()
 		srvCtx, srvCancel := context.WithTimeout(context.Background(), time.Second*3)
 		defer srvCancel()
@@ -109,15 +108,15 @@ func runGus(conf *config.Config) error {
 		select {
 		case <-sigStop:
 			srvCancel()
-			logrus.Warn("Force quit!")
+			logrus.Warn("force quit!")
 		case <-quit:
-			logrus.Info("Quit")
+			logrus.Info("quit")
 		}
 	case <-sigKill:
 		cancel()
 		srv.Close()
 	}
 
-	logrus.Info("Gus stopped")
+	logrus.Info("gus-proxy stopped")
 	return nil
 }

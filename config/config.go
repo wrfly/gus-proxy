@@ -77,7 +77,6 @@ func (c *Config) Validate() error {
 
 // LoadHosts returns the proxy hosts
 func (c *Config) loadHosts() error {
-	logrus.Debug("load proxy hosts")
 	var (
 		proxyfile  io.ReadCloser
 		proxyHosts types.ProxyHosts
@@ -135,12 +134,18 @@ func (c *Config) loadHosts() error {
 	}
 	c.proxyHostsHash = utils.HashSlice(newHosts)
 
+	logrus.Infof("loading %d proxies", len(newHosts))
+
 	c.m.RLock()
 	oldHostsMap := make(map[string]bool, len(newHosts))
 	for _, host := range c.oldHosts {
 		oldHostsMap[host] = true
 	}
-	var newProxyWG sync.WaitGroup
+	var (
+		newProxyWG sync.WaitGroup
+		limit      = make(chan struct{}, 1e3)
+		badProxy   uint32
+	)
 	for i, host := range newHosts {
 		if oldHostsMap[host] {
 			if p := c.proxyHosts.Host(i); p != nil {
@@ -148,17 +153,19 @@ func (c *Config) loadHosts() error {
 			}
 		} else {
 			newProxyWG.Add(1)
+			limit <- struct{}{}
 			go func(host string) {
-				defer newProxyWG.Done()
+				defer func() {
+					newProxyWG.Done()
+					<-limit
+				}()
 
-				proxyhost := &types.ProxyHost{
-					Addr: host,
-				}
+				proxyhost := &types.ProxyHost{Addr: host}
 				if err := proxyhost.Init(); err != nil {
-					logrus.Errorf("init proxy [%s] error: %s", host, err)
-					return
+					atomic.AddUint32(&badProxy, 1)
+				} else {
+					proxyHosts.Add(proxyhost)
 				}
-				proxyHosts.Add(proxyhost)
 			}(host)
 		}
 	}
@@ -167,6 +174,8 @@ func (c *Config) loadHosts() error {
 	c.m.RUnlock()
 
 	c.m.Lock()
+	logrus.Warnf("load %d dead proxies", badProxy)
+	logrus.Infof("load %d alive proxies", proxyHosts.Len())
 	c.proxyHosts = proxyHosts
 	c.m.Unlock()
 
@@ -185,7 +194,10 @@ func (c *Config) UpdateProxies() {
 		wg             sync.WaitGroup
 		availableProxy int32
 	)
+
+	limit := make(chan struct{}, 1e3)
 	for _, proxy := range c.proxyHosts.Hosts() {
+		limit <- struct{}{}
 		wg.Add(1)
 		go func(proxy *types.ProxyHost) {
 			defer wg.Done()
@@ -196,6 +208,7 @@ func (c *Config) UpdateProxies() {
 			}
 			logrus.Debugf("proxy: %s, Available: %t",
 				proxy.Addr, proxy.Available)
+			<-limit
 		}(proxy)
 	}
 	wg.Wait()
