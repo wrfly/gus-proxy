@@ -97,37 +97,39 @@ func (c *Config) loadHosts() error {
 		}
 	}
 	defer proxyfile.Close()
-	lines := bufio.NewReader(proxyfile)
-	var lnum int
-	for {
-		lnum++
-		s, err := lines.ReadString('\n')
-		if err != nil && s == "" {
-			if err == io.EOF {
-				break
+	s := bufio.NewScanner(proxyfile)
+	var l int
+	for s.Scan() {
+		l++
+		target := s.Text()
+		target = strings.ToValidUTF8(target, "")
+		target = strings.TrimFunc(target, func(r rune) bool {
+			if r == '\r' || r == '\n' {
+				return true
 			}
-			return fmt.Errorf("read line error: %s", err)
+			return false
+		})
+		if err := s.Err(); err != nil {
+			return fmt.Errorf("read hosts error: %s", err)
 		}
-
-		if s[0] == '#' {
+		if target == "" || strings.HasPrefix(target, "#") {
+			// skip empty line and comments
 			continue
 		}
 
 		// verify hosts
-		s = strings.TrimRight(s, "\n")
-		logrus.Debugf("validate proxy format: %s", s)
-		proxyline, err := url.Parse(s)
+		logrus.Debugf("validate proxy format: %s", target)
+		proxyline, err := url.Parse(target)
 		if err != nil {
 			logrus.Error(err)
 			continue
 		}
 		if !proxyline.IsAbs() {
-			logrus.Errorf("Proxy has a empty scheme: %s,file: %s,line %d",
-				proxyline, c.ProxyFilePath, lnum)
+			logrus.Errorf("bad proxy: %s, not absolute", target)
 			continue
 		}
 
-		newHosts = append(newHosts, s)
+		newHosts = append(newHosts, target)
 	}
 	if c.proxyHostsHash == utils.HashSlice(newHosts) {
 		return nil
