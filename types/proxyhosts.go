@@ -118,7 +118,10 @@ func (host *ProxyHost) CheckAvaliable() (err error) {
 	if err != nil {
 		return err
 	}
-	logrus.Debugf("proxy [%s] got IP %s", host.Addr, string(bs))
+	if len(bs) >= 1 {
+		bs = bs[:len(bs)-1]
+	}
+	logrus.Debugf("proxy [%s] got IP %s", host.Addr, bs)
 	if host.Type != DIRECT && string(bs) == localIP {
 		return fmt.Errorf("bad proxy [%s], same IP", host.Addr)
 	}
