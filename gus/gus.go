@@ -1,4 +1,4 @@
-package proxy
+package gus
 
 import (
 	"math/rand"
@@ -13,7 +13,7 @@ import (
 
 	"github.com/wrfly/gus-proxy/config"
 	"github.com/wrfly/gus-proxy/db"
-	"github.com/wrfly/gus-proxy/types"
+	"github.com/wrfly/gus-proxy/proxy"
 	"github.com/wrfly/gus-proxy/utils"
 )
 
@@ -21,7 +21,7 @@ type GusProxy http.Handler
 
 // Gustavo main structure
 type Gustavo struct {
-	proxyHosts  func() []*types.ProxyHost
+	proxyHosts  func() []*proxy.Host
 	directProxy *goproxy.ProxyHttpServer
 	noProxyList []*net.IPNet
 
@@ -69,23 +69,23 @@ func (gs *Gustavo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // SelectProxy returns a proxy depends on your scheduler
-func (gs *Gustavo) SelectProxy() (rProxy *types.ProxyHost) {
+func (gs *Gustavo) SelectProxy() (rProxy *proxy.Host) {
 	if len(gs.proxyHosts()) == 0 {
 		// no proxy avaliable
 		return nil
 	}
 
 	switch gs.scheduler {
-	case types.ROUND_ROBIN:
+	case proxy.ROUND_ROBIN:
 		return gs.roundRobin()
-	case types.RANDOM:
+	case proxy.RANDOM:
 		return gs.randomProxy()
 	default:
 		return gs.roundRobin()
 	}
 }
 
-func (gs *Gustavo) roundRobin() *types.ProxyHost {
+func (gs *Gustavo) roundRobin() *proxy.Host {
 	gs.m.Lock()
 	defer gs.m.Unlock()
 
@@ -99,7 +99,7 @@ func (gs *Gustavo) roundRobin() *types.ProxyHost {
 	return ph[gs.next-1]
 }
 
-func (gs *Gustavo) randomProxy() *types.ProxyHost {
+func (gs *Gustavo) randomProxy() *proxy.Host {
 	availableProxy := gs.proxyHosts()
 
 	source := rand.NewSource(time.Now().UnixNano())
@@ -110,7 +110,7 @@ func (gs *Gustavo) randomProxy() *types.ProxyHost {
 	return rProxy
 }
 
-func (gs *Gustavo) pingProxy() *types.ProxyHost {
+func (gs *Gustavo) pingProxy() *proxy.Host {
 	availableProxy := gs.proxyHosts()
 
 	sort.Slice(availableProxy, func(i, j int) bool {

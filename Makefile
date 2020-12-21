@@ -1,5 +1,5 @@
 NAME = gus-proxy
-PKG = github.com/wrfly/$(NAME)/gus
+PKG = github.com/wrfly/$(NAME)/cmd
 BIN = bin
 IMAGE := wrfly/$(NAME)
 
@@ -24,7 +24,7 @@ build: bin
 
 .PHONY: test
 test:
-	go test -cover -v `glide nv`
+	go test -cover -v ./...
 
 .PHONY: dev
 dev: build

@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/sirupsen/logrus"
-	"github.com/wrfly/gus-proxy/types"
+	"github.com/wrfly/gus-proxy/proxy"
 )
 
 func TestConfig(t *testing.T) {
@@ -14,7 +14,7 @@ func TestConfig(t *testing.T) {
 	c := Config{
 		Debug:         true,
 		ProxyFilePath: "../proxyhosts.txt",
-		Scheduler:     types.PING,
+		Scheduler:     proxy.PING,
 		ListenPort:    "8088",
 	}
 
@@ -37,7 +37,7 @@ func TestConfig(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		for _, host := range c.proxyHosts {
+		for _, host := range c.ProxyHosts() {
 			t.Logf("got proxy: %s", host.Addr)
 		}
 	})
@@ -48,7 +48,7 @@ func TestConfig(t *testing.T) {
 			t.Error(err)
 		}
 		c.UpdateProxies()
-		for _, host := range c.availableProxyHosts {
+		for _, host := range c.availableProxyHosts.Hosts() {
 			t.Logf("got available proxy: %s", host.Addr)
 		}
 	})

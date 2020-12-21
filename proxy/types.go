@@ -1,5 +1,6 @@
-package types
+package proxy
 
+// ...
 const (
 	// round robin
 	ROUND_ROBIN = "round-robin"
@@ -9,6 +10,7 @@ const (
 	PING = "ping"
 )
 
+// ...
 const (
 	DIRECT = "direct"
 	HTTP   = "http"

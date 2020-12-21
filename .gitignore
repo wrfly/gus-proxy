@@ -17,3 +17,4 @@ vendor/
 # local test
 proxyhosts_test.txt
 gus-proxy.db
+ssr.txt

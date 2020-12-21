@@ -55,3 +55,11 @@ func TestPubIP(t *testing.T) {
 	}
 	t.Log(ip)
 }
+
+func TestLookupHosts(t *testing.T) {
+	ips, err := LookupHost("kfd.me")
+	if err != nil {
+		t.Error(err)
+	}
+	t.Logf("%v", ips)
+}

@@ -1,4 +1,4 @@
-package types
+package proxy
 
 import (
 	"encoding/base64"
@@ -15,12 +15,13 @@ import (
 	_ "github.com/wrfly/gus-proxy/pkg/go-socks4"
 )
 
+// ...
 const (
-	ProxyAuthHeader = "Proxy-Authorization"
+	AuthHeader = "Proxy-Authorization"
 )
 
 func setBasicAuth(username, password string, req *http.Request) {
-	req.Header.Set(ProxyAuthHeader, fmt.Sprintf("Basic %s", basicAuth(username, password)))
+	req.Header.Set(AuthHeader, fmt.Sprintf("Basic %s", basicAuth(username, password)))
 }
 
 func basicAuth(username, password string) string {
@@ -87,7 +88,7 @@ func proxyDirect() *goproxy.ProxyHttpServer {
 	return goproxy.NewProxyHttpServer()
 }
 
-func initGoProxy(host *ProxyHost) error {
+func initGoProxy(host *Host) error {
 	var (
 		err         error
 		hostAndPort string

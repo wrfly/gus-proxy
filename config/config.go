@@ -14,7 +14,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/wrfly/gus-proxy/types"
+	"github.com/wrfly/gus-proxy/proxy"
 	"github.com/wrfly/gus-proxy/utils"
 )
 
@@ -33,9 +33,9 @@ type Config struct {
 	proxyHostsHash      string
 	proxyAliveHash      string
 	proxyFilePathIsURL  bool
-	proxyHosts          types.ProxyHosts
+	proxyHosts          proxy.Hosts
 	oldHosts            []string
-	availableProxyHosts types.ProxyHosts
+	availableProxyHosts proxy.Hosts
 
 	m sync.RWMutex
 }
@@ -57,9 +57,9 @@ func (c *Config) Validate() error {
 	}
 
 	switch c.Scheduler {
-	case types.ROUND_ROBIN:
-	case types.RANDOM:
-	case types.PING:
+	case proxy.ROUND_ROBIN:
+	case proxy.RANDOM:
+	case proxy.PING:
 	default:
 		return fmt.Errorf("Unknown scheduler: %s", c.Scheduler)
 	}
@@ -79,7 +79,7 @@ func (c *Config) Validate() error {
 func (c *Config) loadHosts() error {
 	var (
 		proxyfile  io.ReadCloser
-		proxyHosts types.ProxyHosts
+		proxyHosts proxy.Hosts
 		newHosts   []string
 		err        error
 	)
@@ -162,7 +162,7 @@ func (c *Config) loadHosts() error {
 					<-limit
 				}()
 
-				proxyhost := &types.ProxyHost{Addr: host}
+				proxyhost := &proxy.Host{Addr: host}
 				if err := proxyhost.Init(); err != nil {
 					logrus.Error(err)
 					atomic.AddUint32(&badProxy, 1)
@@ -199,20 +199,20 @@ func (c *Config) UpdateProxies() {
 	)
 
 	limit := make(chan struct{}, 1e3)
-	for _, proxy := range c.proxyHosts.Hosts() {
+	for _, host := range c.proxyHosts.Hosts() {
 		limit <- struct{}{}
 		wg.Add(1)
-		go func(proxy *types.ProxyHost) {
+		go func(host *proxy.Host) {
 			defer wg.Done()
-			if err := proxy.CheckAvaliable(); err != nil {
-				proxy.Available = false
+			if err := host.CheckAvaliable(); err != nil {
+				host.Available = false
 			} else {
 				atomic.AddInt32(&availableProxy, 1)
 			}
 			logrus.Debugf("proxy: %s, Available: %t",
-				proxy.Addr, proxy.Available)
+				host.Addr, host.Available)
 			<-limit
-		}(proxy)
+		}(host)
 	}
 	wg.Wait()
 
@@ -240,7 +240,7 @@ func (c *Config) UpdateProxies() {
 	c.proxyAliveHash = utils.HashSlice(oldHosts)
 
 	c.m.Lock()
-	c.availableProxyHosts = types.ProxyHosts{}
+	c.availableProxyHosts = proxy.Hosts{}
 	for _, ph := range c.proxyHosts.Hosts() {
 		if ph.Available {
 			c.availableProxyHosts.Add(ph)
@@ -252,6 +252,6 @@ func (c *Config) UpdateProxies() {
 }
 
 // ProxyHosts returns all the proxy hosts get from URL or a static file
-func (c *Config) ProxyHosts() []*types.ProxyHost {
+func (c *Config) ProxyHosts() []*proxy.Host {
 	return c.availableProxyHosts.Hosts()
 }
