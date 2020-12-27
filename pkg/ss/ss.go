@@ -1,76 +1,59 @@
 package ss
 
 import (
-	"encoding/base64"
-	"flag"
+	"fmt"
+	"net"
 	"net/url"
-	"strings"
-	"time"
 
 	"github.com/shadowsocks/go-shadowsocks2/core"
-	log "github.com/sirupsen/logrus"
+	"github.com/shadowsocks/go-shadowsocks2/socks"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/net/proxy"
 )
 
-var config struct {
-	Verbose    bool
-	UDPTimeout time.Duration
-	TCPCork    bool
+func init() {
+	proxy.RegisterDialerType("ss", ssDialer)
 }
 
-func load() {
-	var flags struct {
-		Client   string
-		Server   string
-		Cipher   string
-		Key      string
-		Password string
-		Keygen   int
-		Socks    string
+func ssDialer(u *url.URL, d proxy.Dialer) (proxy.Dialer, error) {
+	if u.User == nil {
+		return nil, fmt.Errorf("empty user")
 	}
 
-	flag.StringVar(&flags.Cipher, "cipher", "AEAD_CHACHA20_POLY1305", "available ciphers: "+strings.Join(core.ListCipher(), " "))
-	flag.StringVar(&flags.Password, "password", "", "password")
-	flag.StringVar(&flags.Key, "key", "", "key")
+	ss := new(shadowsocks)
+	ss.dialer = d
 
-	var key []byte
-	if flags.Key != "" {
-		k, err := base64.URLEncoding.DecodeString(flags.Key)
-		if err != nil {
-			log.Fatal(err)
-		}
-		key = k
-	}
+	cipherName := u.User.Username()
+	ss.server = u.Host
+	passwd, _ := u.User.Password()
 
-	addr := flags.Client
-	cipher := flags.Cipher
-	password := flags.Password
-	var err error
-
-	if strings.HasPrefix(addr, "ss://") {
-		addr, cipher, password, err = parseURL(addr)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	ciph, err := core.PickCipher(cipher, key, password)
+	logrus.Debugf("init url: %+v %s", u, cipherName)
+	cipher, err := core.PickCipher(cipherName, []byte{}, passwd)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("pick cipher err: %s", err)
 	}
+	ss.cipher = cipher
 
-	socksLocal(flags.Socks, addr, ciph.StreamConn)
+	return ss, nil
 }
 
-func parseURL(s string) (addr, cipher, password string, err error) {
-	u, err := url.Parse(s)
-	if err != nil {
-		return
+type shadowsocks struct {
+	dialer proxy.Dialer
+
+	cipher core.Cipher
+	server string
+}
+
+func (ss *shadowsocks) Dial(network, addr string) (net.Conn, error) {
+	if network != "tcp" {
+		return ss.dialer.Dial(network, addr)
 	}
 
-	addr = u.Host
-	if u.User != nil {
-		cipher = u.User.Username()
-		password, _ = u.User.Password()
+	rc, err := net.Dial("tcp", ss.server)
+	if err != nil {
+		return nil, fmt.Errorf("dial target err: %s", err)
 	}
-	return
+	rc = ss.cipher.StreamConn(rc)
+	rc.Write(socks.ParseAddr(addr))
+	return rc, nil
 }

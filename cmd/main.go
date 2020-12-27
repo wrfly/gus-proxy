@@ -65,10 +65,10 @@ func main() {
 				Destination: &conf.Debug,
 			},
 			&cli.StringFlag{
-				Name:        "schduler",
+				Name:        "scheduler",
 				Aliases:     []string{"s"},
-				Value:       "round-robin",
-				Usage:       "schduler: round-robin|ping|random",
+				Value:       "round_robin",
+				Usage:       "scheduler: round_robin|ping|random",
 				Destination: &conf.Scheduler,
 			},
 			&cli.StringFlag{

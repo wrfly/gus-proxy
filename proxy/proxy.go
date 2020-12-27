@@ -13,6 +13,8 @@ import (
 
 	// socks4 proxy
 	_ "github.com/wrfly/gus-proxy/pkg/go-socks4"
+	// shadowsocks proxy
+	_ "github.com/wrfly/gus-proxy/pkg/ss"
 )
 
 // ...
@@ -98,16 +100,17 @@ func initGoProxy(host *Host) error {
 	u, host.Auth, host.Type, hostAndPort = splitURL(host.Addr)
 	switch host.Type {
 	case DIRECT:
-		host.goProxy = proxyDirect()
+		host.proxy = proxyDirect()
 	case HTTP:
-		host.goProxy, err = proxyHTTP(host.Addr)
+		host.proxy, err = proxyHTTP(host.Addr)
 	case SOCKS5:
-		host.goProxy, err = proxySocks5(hostAndPort, host.Auth)
+		host.proxy, err = proxySocks5(hostAndPort, host.Auth)
 	case HTTPS:
 		// TODO:
-		// host.goProxy, err = proxyHTTPS(host.Addr)
-	case SOCKS4:
-		host.goProxy, err = proxySocks4(u)
+		// host.proxy, err = proxyHTTPS(host.Addr)
+	case ShadorSocks, SOCKS4:
+		host.proxy, err = proxySocks4(u)
+
 	default:
 		return fmt.Errorf("[%s]: unknown protocol %s", host.Addr, host.Type)
 	}

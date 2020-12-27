@@ -3,11 +3,12 @@ package socks4
 import (
 	"encoding/binary"
 	"fmt"
-	"golang.org/x/net/proxy"
 	"io"
 	"net"
 	"net/url"
 	"strconv"
+
+	"golang.org/x/net/proxy"
 )
 
 const (
@@ -30,8 +31,6 @@ const (
 	ErrConnRejected  = "connection rejected"
 	ErrIdentRequired = "socks4 server require valid identd"
 )
-
-var ()
 
 func init() {
 	proxy.RegisterDialerType("socks4", func(u *url.URL, d proxy.Dialer) (proxy.Dialer, error) {

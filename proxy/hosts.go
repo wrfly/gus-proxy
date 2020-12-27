@@ -64,12 +64,12 @@ type Host struct {
 	Available bool
 	Auth      proxy.Auth
 
-	u       *url.URL
-	goProxy *goproxy.ProxyHttpServer
+	u     *url.URL
+	proxy *goproxy.ProxyHttpServer
 }
 
 func (host *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	host.goProxy.ServeHTTP(w, r)
+	host.proxy.ServeHTTP(w, r)
 }
 
 func (host *Host) Init() (err error) {
@@ -94,8 +94,8 @@ func (host *Host) CheckAvaliable() (err error) {
 	logrus.Debugf("check [%s] avaliable", host.Addr)
 
 	cli := &http.Client{Timeout: 3 * time.Second}
-	if host.goProxy != nil {
-		cli.Transport = host.goProxy.Tr
+	if host.proxy != nil {
+		cli.Transport = host.proxy.Tr
 	}
 	defer cli.CloseIdleConnections()
 

@@ -57,7 +57,7 @@ func (c *Config) Validate() error {
 	}
 
 	switch c.Scheduler {
-	case proxy.ROUND_ROBIN:
+	case proxy.RR:
 	case proxy.RANDOM:
 	case proxy.PING:
 	default:

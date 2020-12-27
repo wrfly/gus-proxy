@@ -1,20 +1,20 @@
 package proxy
 
-// ...
+// supported chose method
 const (
-	// round robin
-	ROUND_ROBIN = "round-robin"
-	// randomly chose one
+	RR     = "round_robin"
 	RANDOM = "random"
-	// less ping is better
-	PING = "ping"
+	PING   = "ping"
 )
 
-// ...
+// supported protocols
 const (
 	DIRECT = "direct"
 	HTTP   = "http"
 	HTTPS  = "https"
 	SOCKS4 = "socks4"
 	SOCKS5 = "socks5"
+
+	// shadowsocks protocol
+	ShadorSocks = "ss"
 )

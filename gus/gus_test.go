@@ -44,7 +44,7 @@ func TestRoundProxy(t *testing.T) {
 		c := &config.Config{
 			ListenPort:    "54321",
 			ProxyFilePath: "../proxyhosts.txt",
-			Scheduler:     proxy.ROUND_ROBIN,
+			Scheduler:     proxy.RR,
 			RandomUA:      true,
 		}
 		err := c.Validate()

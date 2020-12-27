@@ -76,7 +76,7 @@ func (gs *Gustavo) SelectProxy() (rProxy *proxy.Host) {
 	}
 
 	switch gs.scheduler {
-	case proxy.ROUND_ROBIN:
+	case proxy.RR:
 		return gs.roundRobin()
 	case proxy.RANDOM:
 		return gs.randomProxy()
