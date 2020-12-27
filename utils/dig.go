@@ -4,6 +4,7 @@ import (
 	"net"
 )
 
+// LookupHost ...
 func LookupHost(domain string) (IPs []string, err error) {
 	ips, err := net.LookupIP(domain)
 	if err != nil {
@@ -18,6 +19,6 @@ func LookupHost(domain string) (IPs []string, err error) {
 		ipv4 = append(ipv4, ip.String())
 	}
 
-	return ipv4[:len(ipv4)], nil
+	return ipv4[:], nil
 
 }

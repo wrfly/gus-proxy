@@ -1,4 +1,4 @@
-package proxy
+package gus
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/wrfly/gus-proxy/config"
 	"github.com/wrfly/gus-proxy/db"
-	"github.com/wrfly/gus-proxy/types"
+	"github.com/wrfly/gus-proxy/proxy"
 )
 
 func TestRoundProxy(t *testing.T) {
@@ -23,7 +23,7 @@ func TestRoundProxy(t *testing.T) {
 
 	testNewProxy := func(t *testing.T) {
 		ava := true
-		hosts := []*types.ProxyHost{
+		hosts := []*proxy.Host{
 			{
 				Addr:      "socks5://127.0.0.1:1080",
 				Available: ava,
@@ -44,7 +44,7 @@ func TestRoundProxy(t *testing.T) {
 		c := &config.Config{
 			ListenPort:    "54321",
 			ProxyFilePath: "../proxyhosts.txt",
-			Scheduler:     types.ROUND_ROBIN,
+			Scheduler:     proxy.RR,
 			RandomUA:      true,
 		}
 		err := c.Validate()
@@ -98,14 +98,14 @@ func TestRoundProxy(t *testing.T) {
 	t.Run("with curl", testWithCurl)
 }
 
-func generateProxys() []*types.ProxyHost {
+func generateProxys() []*proxy.Host {
 	num := 10
-	proxys := []*types.ProxyHost{}
+	proxys := []*proxy.Host{}
 	for i := 0; i < num; i++ {
 		source := rand.NewSource(time.Now().UnixNano())
 		r := rand.New(source)
 		ping := r.Float32() * 10
-		rProxy := &types.ProxyHost{
+		rProxy := &proxy.Host{
 			Addr:      fmt.Sprintf("http://proxy-%d-ping-%f", i, ping),
 			Ping:      ping,
 			Available: true,
@@ -118,7 +118,7 @@ func generateProxys() []*types.ProxyHost {
 func TestPingProxy(t *testing.T) {
 	p := &Gustavo{
 		proxyHosts: generateProxys,
-		scheduler:  types.PING,
+		scheduler:  proxy.PING,
 	}
 	rProxy := p.pingProxy()
 	fmt.Println("Select: ", rProxy.Addr)

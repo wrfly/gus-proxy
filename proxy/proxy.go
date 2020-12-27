@@ -1,6 +1,7 @@
-package types
+package proxy
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -12,19 +13,52 @@ import (
 
 	// socks4 proxy
 	_ "github.com/wrfly/gus-proxy/pkg/go-socks4"
+	// shadowsocks proxy
+	_ "github.com/wrfly/gus-proxy/pkg/ss"
 )
+
+// ...
+const (
+	AuthHeader = "Proxy-Authorization"
+)
+
+func setBasicAuth(username, password string, req *http.Request) {
+	req.Header.Set(AuthHeader, fmt.Sprintf("Basic %s", basicAuth(username, password)))
+}
+
+func basicAuth(username, password string) string {
+	return base64.StdEncoding.EncodeToString([]byte(username + ":" + password))
+}
 
 func proxyHTTP(httpAddr string) (*goproxy.ProxyHttpServer, error) {
 	proxyURL, err := url.Parse(httpAddr)
 	if err != nil {
 		return nil, err
 	}
-	logrus.Debugf("New HTTP proxy Host: %s, Port: %s", proxyURL.Host, proxyURL.Port())
+	logrus.Debugf("new HTTP proxy Host: %s, Port: %s", proxyURL.Host, proxyURL.Port())
 
-	prox := goproxy.NewProxyHttpServer()
-	prox.Tr.Proxy = http.ProxyURL(proxyURL)
+	proxyServer := goproxy.NewProxyHttpServer()
+	proxyServer.Tr.Proxy = http.ProxyURL(proxyURL)
+	proxyServer.OnRequest().HandleConnect(goproxy.AlwaysMitm)
 
-	return prox, nil
+	if proxyURL.User.String() != "" {
+		pass, _ := proxyURL.User.Password()
+		user := proxyURL.User.Username()
+		proxyServer.ConnectDial = proxyServer.
+			NewConnectDialToProxyWithHandler(
+				proxyURL.String(),
+				func(req *http.Request) {
+					setBasicAuth(user, pass, req)
+				},
+			)
+		proxyServer.OnRequest().DoFunc(func(req *http.Request,
+			ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+			setBasicAuth(user, pass, req)
+			return req, nil
+		})
+	}
+
+	return proxyServer, nil
 }
 
 func proxySocks4(u *url.URL) (*goproxy.ProxyHttpServer, error) {
@@ -56,7 +90,7 @@ func proxyDirect() *goproxy.ProxyHttpServer {
 	return goproxy.NewProxyHttpServer()
 }
 
-func initGoProxy(host *ProxyHost) error {
+func initGoProxy(host *Host) error {
 	var (
 		err         error
 		hostAndPort string
@@ -66,16 +100,17 @@ func initGoProxy(host *ProxyHost) error {
 	u, host.Auth, host.Type, hostAndPort = splitURL(host.Addr)
 	switch host.Type {
 	case DIRECT:
-		host.goProxy = proxyDirect()
+		host.proxy = proxyDirect()
 	case HTTP:
-		host.goProxy, err = proxyHTTP(host.Addr)
+		host.proxy, err = proxyHTTP(host.Addr)
 	case SOCKS5:
-		host.goProxy, err = proxySocks5(hostAndPort, host.Auth)
+		host.proxy, err = proxySocks5(hostAndPort, host.Auth)
 	case HTTPS:
 		// TODO:
-		// host.goProxy, err = proxyHTTPS(host.Addr)
-	case SOCKS4:
-		host.goProxy, err = proxySocks4(u)
+		// host.proxy, err = proxyHTTPS(host.Addr)
+	case ShadorSocks, SOCKS4:
+		host.proxy, err = proxySocks4(u)
+
 	default:
 		return fmt.Errorf("[%s]: unknown protocol %s", host.Addr, host.Type)
 	}

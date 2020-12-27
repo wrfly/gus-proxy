@@ -1,4 +1,4 @@
-package types
+package proxy
 
 import (
 	"fmt"
@@ -26,26 +26,26 @@ func init() {
 	localIP = ip
 }
 
-type ProxyHosts struct {
-	hosts []*ProxyHost
+type Hosts struct {
+	hosts []*Host
 	m     sync.RWMutex
 }
 
-func (h *ProxyHosts) Add(p *ProxyHost) {
+func (h *Hosts) Add(p *Host) {
 	h.m.Lock()
 	h.hosts = append(h.hosts, p)
 	h.m.Unlock()
 }
 
-func (h *ProxyHosts) Hosts() []*ProxyHost {
+func (h *Hosts) Hosts() []*Host {
 	return h.hosts
 }
 
-func (h *ProxyHosts) Len() int32 {
+func (h *Hosts) Len() int32 {
 	return int32(len(h.hosts))
 }
 
-func (h *ProxyHosts) Host(i int) *ProxyHost {
+func (h *Hosts) Host(i int) *Host {
 	h.m.RLock()
 	l := len(h.hosts)
 	if l <= i {
@@ -56,55 +56,46 @@ func (h *ProxyHosts) Host(i int) *ProxyHost {
 	return p
 }
 
-// ProxyHost defines the proxy
-type ProxyHost struct {
+// Host defines the proxy
+type Host struct {
 	Type      string  // http or socks5 or direct
 	Addr      string  // 127.0.0.1:1080
 	Ping      float32 // 66 ms
 	Available bool
 	Auth      proxy.Auth
 
-	u       *url.URL
-	goProxy *goproxy.ProxyHttpServer
+	u     *url.URL
+	proxy *goproxy.ProxyHttpServer
 }
 
-func (host *ProxyHost) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	host.goProxy.ServeHTTP(w, r)
+func (host *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	host.proxy.ServeHTTP(w, r)
 }
 
-func (host *ProxyHost) Init() (err error) {
-	if err := host.initProxy(); err != nil {
-		return err
-	}
-	if err := host.CheckAvaliable(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (host *ProxyHost) initProxy() (err error) {
+func (host *Host) Init() (err error) {
 	logrus.Debugf("init proxy [%s]", host.Addr)
 	host.u, err = url.Parse(host.Addr)
-
-	if host.u.Scheme == "direct" {
-		return initGoProxy(host)
-	}
-
-	conn, err := net.DialTimeout("tcp", host.u.Host, 1*time.Second)
 	if err != nil {
-		return fmt.Errorf("dial failed: %s", err)
+		return err
 	}
-	conn.Close()
+
+	if host.u.Scheme != "direct" {
+		conn, err := net.DialTimeout("tcp", host.u.Host, 3*time.Second)
+		if err != nil {
+			return err
+		}
+		conn.Close()
+	}
 
 	return initGoProxy(host)
 }
 
-func (host *ProxyHost) CheckAvaliable() (err error) {
+func (host *Host) CheckAvaliable() (err error) {
 	logrus.Debugf("check [%s] avaliable", host.Addr)
 
 	cli := &http.Client{Timeout: 3 * time.Second}
-	if host.goProxy != nil {
-		cli.Transport = host.goProxy.Tr
+	if host.proxy != nil {
+		cli.Transport = host.proxy.Tr
 	}
 	defer cli.CloseIdleConnections()
 

@@ -21,6 +21,7 @@ touch data/proxies.txt
 # http://user:pass@127.0.0.1:1081
 # socks4://127.0.0.1:1082
 # direct://0.0.0.0
+# ss://AEAD_CHACHA20_POLY1305:passw0rd@127.0.0.1:1083
 
 # then:
 sudo docker run --rm -ti --name gus-proxy \

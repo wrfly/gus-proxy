@@ -1,4 +1,4 @@
-package types
+package proxy
 
 import (
 	"io/ioutil"
@@ -75,7 +75,7 @@ func TestInitProxy(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
 	logrus.SetOutput(os.Stdout)
 
-	hosts := []*ProxyHost{
+	hosts := []*Host{
 		{Addr: "socks5://127.0.0.1:1080"},
 		{Addr: "https://127.0.0.1:1081"},
 		{Addr: "direct://0.0.0.0"},
