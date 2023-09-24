@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	"github.com/sirupsen/logrus"
-	"gopkg.in/urfave/cli.v2"
+	"github.com/urfave/cli/v2"
 
 	"github.com/wrfly/gus-proxy/config"
 )
@@ -26,6 +26,13 @@ OPTIONS:
 {{range .VisibleFlags}}    {{.}}
 {{end}}{{end}}`
 
+// build info
+var (
+	Version  string
+	CommitID string
+	BuildAt  string
+)
+
 func main() {
 	conf := &config.Config{
 		NoProxyCIDR: make([]*net.IPNet, 0),
@@ -36,7 +43,10 @@ func main() {
 		Usage: "Change proxy for every request",
 		Version: fmt.Sprintf("version: %s\tcommit: %s\tdate: %s",
 			Version, CommitID, BuildAt),
-		Authors: author,
+		Authors: []*cli.Author{{
+			Name:  "wrfly",
+			Email: "mr.wrfly@gmail.com",
+		}},
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "file",
